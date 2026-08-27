@@ -3,7 +3,6 @@
 // geometry from geometry.ts so the aspect cap and the fit agree.
 
 import type { Puzzle, Cell } from './generate';
-import { BANK } from './bank';
 import { footprint, latticeToScreen } from './geometry';
 import { intervalName, noteName } from './theory';
 
@@ -68,15 +67,22 @@ export interface GridView {
  * Draw `puzzle` into `gridEl`, sized to fit `stageEl`. Cells are diamonds; the
  * SVG polyline (empty until a path is selected) draws the connecting line.
  */
-export function renderGrid(stageEl: HTMLElement, gridEl: HTMLElement, puzzle: Puzzle): GridView {
+export function renderGrid(
+  stageEl: HTMLElement,
+  gridEl: HTMLElement,
+  puzzle: Puzzle,
+  maxS?: number,
+): GridView {
   gridEl.innerHTML = '';
   const cells = puzzle.cells;
 
-  // Footprint in unit spacing, then choose pixel spacing s to fit the stage.
+  // Footprint in unit spacing, then choose pixel spacing s to fit the stage,
+  // capped at maxS so a puzzle diamond never exceeds a target diamond.
   const box = footprint(cells, 1);
   const availW = Math.max(stageEl.clientWidth - 16, 120);
   const availH = Math.max(stageEl.clientHeight - 16, 120);
-  const s = Math.min(availW / box.width, availH / box.height);
+  let s = Math.min(availW / box.width, availH / box.height);
+  if (maxS !== undefined) s = Math.min(s, maxS);
 
   const px = (cell: Cell): { x: number; y: number } => {
     const p = latticeToScreen(cell.col, cell.row, s);
@@ -130,31 +136,32 @@ export interface TokenView {
   centers: Map<number, { x: number; y: number }>;
 }
 
-const TOKEN_MAX_D = 100; // cap (desktop); on mobile the width fit governs
-const TOKEN_GAP = 1.18; // center spacing as a multiple of a diamond's diagonal
-// The longest sequence in the bank — diamonds are sized to fit THIS many so the
-// size is constant across puzzles regardless of their sequence length.
-const MAX_SEQ_LEN = Math.max(...BANK.map((p) => p.intervals.length));
+const TOKEN_REF_LEN = 5; // size the target row to fit up to this many (future 5-note chords)
+const TOKEN_PITCH_MAX = 130; // cap on center-to-center spacing (keeps desktop sane)
 
 /**
- * Draw the target intervals as puzzle-style diamonds in a horizontal row. Sized
- * to fit the LONGEST possible sequence into the band width (so the size never
- * changes between puzzles), with an SVG overlay for the pink path line. Font is
- * scaled to the diamond so the widest labels (aug2/dim5) always fit.
+ * Center-to-center spacing for the target diamonds — sized so REF_LEN of them
+ * fit `availW`. Shared with the grid: the puzzle caps its cell size to half this
+ * so a puzzle diamond never exceeds a target diamond.
  */
-export function renderTokens(tokensEl: HTMLElement, puzzle: Puzzle): TokenView {
+export function targetPitch(availW: number): number {
+  return Math.min(TOKEN_PITCH_MAX, availW / TOKEN_REF_LEN);
+}
+
+/**
+ * Draw the target intervals as puzzle-style diamonds in a tight horizontal row —
+ * the same diamond-in-slot ratio and one-diagonal (near-touching) spacing as the
+ * grid. Driven by a shared `pitch` so the size is constant across puzzles and up
+ * to REF_LEN fit. Font is scaled so the widest labels (aug2/dim5) always fit.
+ */
+export function renderTokens(tokensEl: HTMLElement, puzzle: Puzzle, pitch: number): TokenView {
   tokensEl.innerHTML = '';
   const intervals = puzzle.pattern.intervals;
   const n = intervals.length;
 
-  // Measure the full band (the parent), not the collapsed .tokens element.
-  const bandW = tokensEl.parentElement?.clientWidth ?? window.innerWidth;
-  const availW = Math.max(bandW - 24, 200);
-  // total row width = d√2 · ((count−1)·GAP + 1); solve for d at MAX_SEQ_LEN.
-  const d = Math.min(TOKEN_MAX_D, availW / (Math.SQRT2 * ((MAX_SEQ_LEN - 1) * TOKEN_GAP + 1)));
-  const diag = d * Math.SQRT2;
-  const s = TOKEN_GAP * diag; // center-to-center spacing
-  const rowW = (n - 1) * s + diag;
+  const side = (CELL_FILL * pitch) / Math.SQRT2; // drawn diamond side (matches grid)
+  const diag = side * Math.SQRT2; // = CELL_FILL * pitch
+  const rowW = (n - 1) * pitch + diag;
   const rowH = diag;
 
   tokensEl.style.width = `${rowW}px`;
@@ -168,20 +175,20 @@ export function renderTokens(tokensEl: HTMLElement, puzzle: Puzzle): TokenView {
   svg.append(polyline);
   tokensEl.append(svg);
 
-  const fontPx = Math.max(13, Math.min(d * 0.34, 30)); // ensures 4-char labels fit
+  const fontPx = Math.max(12, Math.min(side * 0.42, 26));
   const tokenEls = new Map<number, HTMLElement>();
   const centers = new Map<number, { x: number; y: number }>();
 
   intervals.forEach((iv, i) => {
-    const cx = diag / 2 + i * s;
+    const cx = diag / 2 + i * pitch;
     const cy = rowH / 2;
     centers.set(i, { x: cx, y: cy });
     const div = document.createElement('div');
     div.className = 'cell token-diamond';
-    div.style.left = `${cx - d / 2}px`;
-    div.style.top = `${cy - d / 2}px`;
-    div.style.width = `${d}px`;
-    div.style.height = `${d}px`;
+    div.style.left = `${cx - side / 2}px`;
+    div.style.top = `${cy - side / 2}px`;
+    div.style.width = `${side}px`;
+    div.style.height = `${side}px`;
     const glyph = document.createElement('span');
     glyph.className = 'glyph';
     glyph.style.fontSize = `${fontPx}px`;

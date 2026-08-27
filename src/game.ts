@@ -7,6 +7,7 @@ import {
   mountShell,
   renderGrid,
   renderTokens,
+  targetPitch,
   drawPath,
   drawTokenLine,
   type Shell,
@@ -57,8 +58,12 @@ export function startGame(root: HTMLElement): void {
   };
 
   const layout = (): void => {
-    view = renderGrid(shell.stageEl, shell.gridEl, puzzle);
-    tokenView = renderTokens(shell.tokensEl, puzzle);
+    // One shared pitch drives both: target diamonds sized to fit up to 5, and
+    // the grid capped at pitch/2 so a puzzle diamond never exceeds a target one.
+    const bandW = shell.tokensEl.parentElement?.clientWidth ?? window.innerWidth;
+    const pitch = targetPitch(bandW - 24);
+    view = renderGrid(shell.stageEl, shell.gridEl, puzzle, pitch / 2);
+    tokenView = renderTokens(shell.tokensEl, puzzle, pitch);
     wireCells();
     updateHighlights();
   };
