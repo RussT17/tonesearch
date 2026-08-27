@@ -1,94 +1,15 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <!-- This meta tag is what makes the page behave on phones. Without it,
-       mobile browsers pretend to be a zoomed-out desktop. -->
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>tonesearch — hello world</title>
-  <style>
-    :root { color-scheme: light dark; }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; }
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 1.5rem;
-      font-family: system-ui, -apple-system, sans-serif;
-      text-align: center;
-      padding: 1.5rem;
-      background: #10131a;
-      color: #e8ecf3;
-      /* Disable the double-tap-to-zoom / text-select feel so it plays like a game */
-      -webkit-user-select: none;
-      user-select: none;
-      touch-action: manipulation;
-    }
-    h1 { font-size: 1.5rem; margin: 0; font-weight: 650; }
-    p  { margin: 0; opacity: 0.7; max-width: 28ch; line-height: 1.5; }
-    button {
-      font: inherit;
-      font-size: 1.25rem;
-      font-weight: 600;
-      padding: 1rem 2rem;
-      border: none;
-      border-radius: 1rem;
-      background: #4c7dff;
-      color: white;
-      cursor: pointer;
-      /* Big enough to tap comfortably with a thumb */
-      min-width: 12rem;
-      min-height: 3.5rem;
-      transition: transform 0.05s ease;
-    }
-    button:active { transform: scale(0.96); }
-    .status { font-variant-numeric: tabular-nums; opacity: 0.6; min-height: 1.2em; }
-  </style>
-</head>
-<body>
-  <h1>🔊 It works!</h1>
-  <p>If you can hear a beep when you tap this button, your whole pipeline is live.</p>
-  <button id="beep">Beep</button>
-  <div class="status" id="status">Beeps played: 0</div>
-
-  <script>
-    // Web Audio API: we create ONE audio "context" and reuse it. Mobile
-    // browsers require this to be created/resumed during a real user tap,
-    // which is why we do it inside the click handler the first time.
-    let audioCtx = null;
-    let count = 0;
-    const statusEl = document.getElementById('status');
-
-    function beep() {
-      // Lazily create the audio context on first interaction.
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      // Some browsers start the context "suspended" — resume it on tap.
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-
-      const osc = audioCtx.createOscillator();   // the tone generator
-      const gain = audioCtx.createGain();          // the volume control
-      osc.type = 'sine';
-      osc.frequency.value = 660;                   // pitch in Hz (A5-ish)
-
-      // Quick fade in/out so it doesn't "click" — an envelope.
-      const now = audioCtx.currentTime;
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.3, now + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
-
-      osc.connect(gain).connect(audioCtx.destination);
-      osc.start(now);
-      osc.stop(now + 0.26);
-
-      count++;
-      statusEl.textContent = 'Beeps played: ' + count;
-    }
-
-    document.getElementById('beep').addEventListener('click', beep);
-  </script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>ToneSearch</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
 </html>
