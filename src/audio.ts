@@ -17,7 +17,7 @@ const VOICE: { type: OscillatorType; attack: number; decay: number } = {
 
 let ctx: AudioContext | null = null;
 let warmed = false;
-let keepAlive: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
+let keepAlive: { osc: OscillatorNode; gain: GainNode } | null = null;
 let muted = loadMuted();
 
 function loadMuted(): boolean {
@@ -38,20 +38,36 @@ function audioCtx(): AudioContext {
   return ctx;
 }
 
-/** Keep a silent looping source running so the audio output stream stays hot —
- * without it, the first note after an idle stream pays a cold-start latency. */
+/**
+ * Keep the output genuinely active with an INAUDIBLE but NON-ZERO signal so a
+ * Bluetooth (A2DP) link never idles. Pure digital silence (all-zero samples)
+ * lets the BT transport sleep, so the first real note pays a ~100–150ms
+ * cold-start; a near-ultrasonic tone at ~-62 dBFS holds the link streaming
+ * while staying inaudible.
+ */
 function startKeepAlive(c: AudioContext): void {
   if (keepAlive) return;
-  const frames = Math.max(1, Math.floor(c.sampleRate * 0.5));
-  const buffer = c.createBuffer(1, frames, c.sampleRate); // all zeros = silence
-  const src = c.createBufferSource();
-  src.buffer = buffer;
-  src.loop = true;
+  const osc = c.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.value = Math.min(20000, c.sampleRate / 2 - 1000); // near/above audible edge
   const gain = c.createGain();
+  gain.gain.value = 0.0008; // ~-62 dBFS: non-zero energy, but inaudible
+  osc.connect(gain).connect(c.destination);
+  osc.start();
+  keepAlive = { osc, gain };
+}
+
+/** Build the band-limited 'triangle' wavetable once (silently) on the unlock
+ * gesture so the first real note doesn't pay the one-time wavetable-init cost. */
+function warmOscillator(c: AudioContext): void {
+  const osc = c.createOscillator();
+  const gain = c.createGain();
+  osc.type = VOICE.type; // same waveform the real notes use
   gain.gain.value = 0;
-  src.connect(gain).connect(c.destination);
-  src.start();
-  keepAlive = { src, gain };
+  osc.connect(gain).connect(c.destination);
+  const t = c.currentTime;
+  osc.start(t);
+  osc.stop(t + 0.02);
 }
 
 /** Construct the (suspended) context at page load so the first gesture only
@@ -87,7 +103,8 @@ export function unlock(): void {
   if (!warmed) {
     warmed = true;
     try {
-      startKeepAlive(c); // keep the output stream hot → no first-note cold start
+      startKeepAlive(c); // hold the (Bluetooth) output stream open — no cold start
+      warmOscillator(c); // pre-build the triangle wavetable
     } catch {
       /* ignore */
     }
