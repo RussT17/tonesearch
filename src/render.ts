@@ -40,6 +40,8 @@ export function mountShell(root: HTMLElement): Shell {
 
   const tokensLabel = el('div', 'tokens-label', 'Find this sequence');
   const tokensEl = el('div', 'tokens');
+  const tokensBand = el('div', 'tokens-band');
+  tokensBand.append(tokensLabel, tokensEl);
 
   const controls = el('div', 'controls');
   const giveUpBtn = el<HTMLButtonElement>('button', 'giveup', 'Give Up');
@@ -50,8 +52,7 @@ export function mountShell(root: HTMLElement): Shell {
   stageEl.setAttribute('aria-label', 'Note grid');
   tokensEl.setAttribute('aria-label', 'Target intervals');
 
-  const spacer = el('div', 'spacer'); // flexible: centers the tokens below the grid
-  root.append(topbar, stageEl, tokensLabel, tokensEl, spacer, controls);
+  root.append(topbar, stageEl, tokensBand, controls);
   return { difficultyEl, counterEl, stageEl, gridEl, tokensEl, giveUpBtn, muteBtn };
 }
 

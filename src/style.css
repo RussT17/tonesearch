@@ -64,11 +64,16 @@ body {
   min-height: 0;
   padding: 0.5rem;
 }
-/* flexible spacer below the tokens: with .stage flex:2 this centers the token
-   row evenly between the grid and the bottom controls (even 3-way split). */
-.spacer {
+/* the token band takes the space below the grid and centers the tokens within
+   it, so they sit midway between the grid and the controls instead of hugging
+   the grid on tall puzzles. */
+.tokens-band {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 .grid {
   position: relative;
