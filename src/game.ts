@@ -66,9 +66,8 @@ export function startGame(root: HTMLElement): void {
       // its own pitch in context.
       el.onpointerdown = () => {
         if (phase !== 'playing') return;
-        const idx = selection.indexOf(id);
-        if (idx !== -1) audio.playNoteMidi(selectionMidis[idx]!);
-        else audio.playNoteMidi(ascendMidi(noteOf.get(id)!, selectionMidis[selectionMidis.length - 1]));
+        if (selection.includes(id)) return; // re-tapping a selected note rewinds → no sound
+        audio.playNoteMidi(ascendMidi(noteOf.get(id)!, selectionMidis[selectionMidis.length - 1]));
       };
       el.onclick = () => onTap(id);
     });
@@ -127,7 +126,7 @@ export function startGame(root: HTMLElement): void {
     phase = 'busy';
     shell.gridEl.classList.add('solved');
     shell.tokensEl.classList.add('solved');
-    audio.playChord(puzzle.solutionNotes, 0.22); // chord only, after the final tap note settles
+    audio.playChord(puzzle.solutionNotes, 0.4); // chord only, well after the final tap note
     solved += 1;
     shell.counterEl.textContent = `Solved: ${solved}`;
     setTimeout(nextPuzzle, 1150);
