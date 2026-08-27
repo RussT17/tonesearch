@@ -153,8 +153,48 @@ body {
   background: var(--neon-dim);
 }
 
+/* --- transitions & feedback --- */
+.stage {
+  transition: opacity 350ms ease;
+}
+.stage.fade {
+  opacity: 0;
+}
+.grid.shake {
+  animation: shake 0.32s ease;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(7px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.cell.nudge {
+  animation: nudge 0.2s ease;
+}
+@keyframes nudge {
+  50% { box-shadow: 0 0 14px var(--neon-bright); }
+}
+/* solved: brighten the path line and pulse the path cells */
+.grid.solved .path-overlay polyline {
+  stroke-width: 4;
+  filter: drop-shadow(0 0 12px var(--neon-bright));
+}
+.grid.solved .cell.selected {
+  animation: solvePulse 0.7s ease;
+  background: rgba(224, 170, 255, 0.4);
+  box-shadow: 0 0 20px var(--neon-bright), inset 0 0 12px var(--neon-dim);
+}
+@keyframes solvePulse {
+  0% { box-shadow: 0 0 8px var(--neon-dim); }
+  50% { box-shadow: 0 0 26px var(--neon-bright); }
+  100% { box-shadow: 0 0 20px var(--neon-bright); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
+    animation: none !important;
   }
 }
