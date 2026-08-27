@@ -140,7 +140,8 @@ export function startGame(root: HTMLElement): void {
   document.addEventListener('pointerdown', () => audio.unlock(), { capture: true });
   document.addEventListener('touchstart', () => audio.unlock(), { capture: true, passive: true });
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) audio.unlock();
+    if (document.hidden) audio.stopKeepAlive(); // let the BT link idle in background
+    else audio.unlock(); // foregrounded → resume + restart keep-alive
   });
 
   newPuzzle();

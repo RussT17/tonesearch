@@ -85,6 +85,9 @@ export function setMuted(m: boolean): void {
   } catch {
     /* storage may be unavailable */
   }
+  // No sound while muted → no need to hold the Bluetooth link open.
+  if (m) stopKeepAlive();
+  else if (ctx && !document.hidden) startKeepAlive(ctx);
 }
 
 export const toggleMuted = (): boolean => {
@@ -103,12 +106,33 @@ export function unlock(): void {
   if (!warmed) {
     warmed = true;
     try {
-      startKeepAlive(c); // hold the (Bluetooth) output stream open — no cold start
-      warmOscillator(c); // pre-build the triangle wavetable
+      warmOscillator(c); // pre-build the triangle wavetable (once)
     } catch {
       /* ignore */
     }
   }
+  if (!muted) {
+    try {
+      startKeepAlive(c); // (re)start; idempotent, gated to active play
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/** Stop the keep-alive so the Bluetooth link can idle (saving battery) when the
+ * game isn't in active play — tab backgrounded or muted. Restarted on the next
+ * unlock (a foreground gesture / unmute). */
+export function stopKeepAlive(): void {
+  if (!keepAlive) return;
+  try {
+    keepAlive.osc.stop();
+  } catch {
+    /* already stopped */
+  }
+  keepAlive.osc.disconnect();
+  keepAlive.gain.disconnect();
+  keepAlive = null;
 }
 
 const midiToFreq = (midi: number): number => 440 * 2 ** ((midi - 69) / 12);
