@@ -56,13 +56,19 @@ body {
 
 /* --- grid stage --- */
 .stage {
-  flex: 1;
+  flex: 2;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 0;
   padding: 0.5rem;
+}
+/* flexible spacer below the tokens: with .stage flex:2 this centers the token
+   row evenly between the grid and the bottom controls (even 3-way split). */
+.spacer {
+  flex: 1;
+  min-height: 0;
 }
 .grid {
   position: relative;

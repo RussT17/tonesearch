@@ -50,7 +50,8 @@ export function mountShell(root: HTMLElement): Shell {
   stageEl.setAttribute('aria-label', 'Note grid');
   tokensEl.setAttribute('aria-label', 'Target intervals');
 
-  root.append(topbar, stageEl, tokensLabel, tokensEl, controls);
+  const spacer = el('div', 'spacer'); // flexible: centers the tokens below the grid
+  root.append(topbar, stageEl, tokensLabel, tokensEl, spacer, controls);
   return { difficultyEl, counterEl, stageEl, gridEl, tokensEl, giveUpBtn, muteBtn };
 }
 
