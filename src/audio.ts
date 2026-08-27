@@ -51,8 +51,19 @@ export const toggleMuted = (): boolean => {
 
 const midiToFreq = (midi: number): number => 440 * 2 ** ((midi - 69) / 12);
 
+/** Create/resume the context on a user gesture so later taps sound immediately. */
+export function unlock(): void {
+  audioCtx();
+}
+
 function playFreq(freq: number, when: number, peak: number): void {
   const c = audioCtx();
+  // While suspended the clock is frozen; scheduling now would queue every note
+  // at the same past time and fire them all at once on resume. Skip instead.
+  if (c.state !== 'running') {
+    void c.resume();
+    return;
+  }
   const t0 = c.currentTime + when;
   const osc = c.createOscillator();
   const gain = c.createGain();

@@ -130,5 +130,12 @@ export function startGame(root: HTMLElement): void {
     if (phase === 'playing') layout();
   });
 
+  // Keep audio unlocked: resume on the first (and every) pointer gesture, and
+  // whenever the tab becomes visible again (mobile re-suspends on background).
+  document.addEventListener('pointerdown', () => audio.unlock(), { capture: true });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) audio.unlock();
+  });
+
   newPuzzle();
 }
