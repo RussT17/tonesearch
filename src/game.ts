@@ -58,25 +58,17 @@ export function startGame(root: HTMLElement): void {
     drawTokenLine(tokenView, selection.length);
   };
 
-  // Would tapping `id` be a valid next step of the sequence?
-  const validNext = (id: number): boolean => {
-    if (selection.includes(id)) return false;
-    const last = selection[selection.length - 1];
-    if (selection.length === 0) return true; // first tap becomes the root
-    if (last === undefined || !adjacent(last, id)) return false;
-    const notes = [...selection.map((c) => noteOf.get(c)!), noteOf.get(id)!];
-    return isPrefix(notes, puzzle.pattern);
-  };
-
   const wireCells = (): void => {
     view.cellEls.forEach((el, id) => {
-      // sound on press (earliest instant, snappier); selection on click. Valid
-      // path taps ascend; exploration/wrong taps stay in the single octave.
+      // Sound on press. ANY unselected tap is voiced as the candidate NEXT note
+      // (ascending above the last selected) — right or wrong — so the user can
+      // hear how it would sound in position. Re-tapping a selected cell replays
+      // its own pitch in context.
       el.onpointerdown = () => {
         if (phase !== 'playing') return;
-        const note = noteOf.get(id)!;
-        if (validNext(id)) audio.playNoteMidi(ascendMidi(note, selectionMidis[selectionMidis.length - 1]));
-        else audio.playNote(note);
+        const idx = selection.indexOf(id);
+        if (idx !== -1) audio.playNoteMidi(selectionMidis[idx]!);
+        else audio.playNoteMidi(ascendMidi(noteOf.get(id)!, selectionMidis[selectionMidis.length - 1]));
       };
       el.onclick = () => onTap(id);
     });
