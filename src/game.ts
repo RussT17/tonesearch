@@ -120,10 +120,12 @@ export function startGame(root: HTMLElement): void {
   }
 
   shell.giveUpBtn.onclick = reveal;
-  shell.muteBtn.onclick = () => {
-    shell.muteBtn.textContent = audio.toggleMuted() ? '🔇' : '🔊';
+  const paintMute = (m: boolean): void => {
+    shell.muteBtn.textContent = m ? '🔇' : '🔊';
+    shell.muteBtn.setAttribute('aria-label', m ? 'Unmute' : 'Mute');
   };
-  shell.muteBtn.textContent = audio.isMuted() ? '🔇' : '🔊';
+  shell.muteBtn.onclick = () => paintMute(audio.toggleMuted());
+  paintMute(audio.isMuted());
   window.addEventListener('resize', () => {
     if (phase === 'playing') layout();
   });

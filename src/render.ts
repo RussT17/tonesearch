@@ -42,8 +42,12 @@ export function mountShell(root: HTMLElement): Shell {
 
   const controls = el('div', 'controls');
   const giveUpBtn = el<HTMLButtonElement>('button', 'giveup', 'Give Up');
+  giveUpBtn.setAttribute('aria-label', 'Give up and reveal the answer');
   const muteBtn = el<HTMLButtonElement>('button', 'mute', '🔊');
+  muteBtn.setAttribute('aria-label', 'Mute');
   controls.append(giveUpBtn, muteBtn);
+  stageEl.setAttribute('aria-label', 'Note grid');
+  tokensEl.setAttribute('aria-label', 'Target intervals');
 
   root.append(topbar, stageEl, tokensEl, controls);
   return { difficultyEl, counterEl, stageEl, gridEl, tokensEl, giveUpBtn, muteBtn };
