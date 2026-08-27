@@ -144,4 +144,37 @@ export function startGame(root: HTMLElement): void {
   });
 
   newPuzzle();
+  showStartGate();
+
+  // "Tap to start" gate: the first gesture unlocks + warms the audio pipeline
+  // while no sound is expected, so the first real note tap is lag-free.
+  function showStartGate(): void {
+    const overlay = document.createElement('div');
+    overlay.className = 'start-overlay';
+    const inner = document.createElement('div');
+    inner.className = 'start-inner';
+    const title = document.createElement('div');
+    title.className = 'start-title';
+    title.textContent = 'ToneSearch';
+    const sub = document.createElement('div');
+    sub.className = 'start-sub';
+    sub.textContent = 'Find the interval sequence in the grid';
+    const btn = document.createElement('button');
+    btn.className = 'start-btn';
+    btn.textContent = 'Play';
+    inner.append(title, sub, btn);
+    overlay.append(inner);
+
+    let begun = false;
+    const begin = (): void => {
+      if (begun) return;
+      begun = true;
+      audio.unlock(); // resume + warm-up inside this gesture
+      overlay.classList.add('hide');
+      setTimeout(() => overlay.remove(), 400);
+    };
+    btn.addEventListener('click', begin);
+    overlay.addEventListener('pointerdown', begin);
+    root.append(overlay);
+  }
 }
