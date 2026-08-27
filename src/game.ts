@@ -33,6 +33,10 @@ export function startGame(root: HTMLElement): void {
 
   const wireCells = (): void => {
     view.cellEls.forEach((el, id) => {
+      // sound on press (earliest instant, snappier); selection on click
+      el.onpointerdown = () => {
+        if (phase === 'playing') audio.playNote(noteOf.get(id)!);
+      };
       el.onclick = () => onTap(id);
     });
   };
@@ -64,12 +68,11 @@ export function startGame(root: HTMLElement): void {
   function onTap(id: number): void {
     if (phase !== 'playing') return;
     const next = updateSelection(selection, id, adjacent);
-    if (next.length > selection.length) audio.playNote(noteOf.get(id)!); // appended
-    else if (next.length === selection.length) {
-      nudge(id); // rejected (non-adjacent)
+    if (next === selection) {
+      nudge(id); // rejected (non-adjacent) — updateSelection returns the same ref
       return;
     }
-    selection = next;
+    selection = next; // sound already played on pointerdown
     highlight();
     drawPath(view, selection);
     if (selection.length === puzzle.solutionNotes.length) check();
@@ -130,9 +133,12 @@ export function startGame(root: HTMLElement): void {
     if (phase === 'playing') layout();
   });
 
-  // Keep audio unlocked: resume on the first (and every) pointer gesture, and
-  // whenever the tab becomes visible again (mobile re-suspends on background).
+  // Keep audio unlocked: construct the context now (suspended), then resume on
+  // the earliest gesture and whenever the tab becomes visible again (mobile
+  // re-suspends on background).
+  audio.prime();
   document.addEventListener('pointerdown', () => audio.unlock(), { capture: true });
+  document.addEventListener('touchstart', () => audio.unlock(), { capture: true, passive: true });
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) audio.unlock();
   });

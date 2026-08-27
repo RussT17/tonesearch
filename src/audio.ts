@@ -37,6 +37,12 @@ function audioCtx(): AudioContext {
   return ctx;
 }
 
+/** Construct the (suspended) context at page load so the first gesture only
+ * pays the resume cost, not construction. */
+export function prime(): void {
+  audioCtx();
+}
+
 export const isMuted = (): boolean => muted;
 
 export function setMuted(m: boolean): void {
