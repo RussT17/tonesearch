@@ -15,9 +15,19 @@ import {
   type TokenView,
 } from './render';
 import { updateSelection } from './input';
+import { pitchClass } from './theory';
 import * as audio from './audio';
 
 type Phase = 'playing' | 'busy';
+
+const TAP_BASE_MIDI = 60; // C4 — bottom of the ascending selection voicing
+
+/** MIDI for a selected note voiced above the previous one (ascending path). */
+function ascendMidi(note: number, prev: number | undefined): number {
+  let m = TAP_BASE_MIDI + pitchClass(note);
+  if (prev !== undefined) while (m <= prev) m += 12;
+  return m;
+}
 
 export function startGame(root: HTMLElement): void {
   const shell: Shell = mountShell(root);
@@ -26,6 +36,7 @@ export function startGame(root: HTMLElement): void {
   let view!: GridView;
   let tokenView!: TokenView;
   let selection: number[] = [];
+  let selectionMidis: number[] = []; // ascending MIDI played for each selected note
   let solved = 0;
   let phase: Phase = 'playing';
   let coordOf = new Map<number, { col: number; row: number }>();
@@ -47,11 +58,25 @@ export function startGame(root: HTMLElement): void {
     drawTokenLine(tokenView, selection.length);
   };
 
+  // Would tapping `id` be a valid next step of the sequence?
+  const validNext = (id: number): boolean => {
+    if (selection.includes(id)) return false;
+    const last = selection[selection.length - 1];
+    if (selection.length === 0) return true; // first tap becomes the root
+    if (last === undefined || !adjacent(last, id)) return false;
+    const notes = [...selection.map((c) => noteOf.get(c)!), noteOf.get(id)!];
+    return isPrefix(notes, puzzle.pattern);
+  };
+
   const wireCells = (): void => {
     view.cellEls.forEach((el, id) => {
-      // sound on press (earliest instant, snappier); selection on click
+      // sound on press (earliest instant, snappier); selection on click. Valid
+      // path taps ascend; exploration/wrong taps stay in the single octave.
       el.onpointerdown = () => {
-        if (phase === 'playing') audio.playNote(noteOf.get(id)!);
+        if (phase !== 'playing') return;
+        const note = noteOf.get(id)!;
+        if (validNext(id)) audio.playNoteMidi(ascendMidi(note, selectionMidis[selectionMidis.length - 1]));
+        else audio.playNote(note);
       };
       el.onclick = () => onTap(id);
     });
@@ -71,6 +96,7 @@ export function startGame(root: HTMLElement): void {
   const newPuzzle = (): void => {
     puzzle = generatePuzzle(DEFAULT_CONFIG, Math.floor(Math.random() * 1e9));
     selection = [];
+    selectionMidis = [];
     coordOf = new Map(puzzle.cells.map((c) => [c.id, { col: c.col, row: c.row }]));
     noteOf = new Map(puzzle.cells.map((c) => [c.id, c.note]));
     layout();
@@ -96,6 +122,9 @@ export function startGame(root: HTMLElement): void {
         shake(); // wrong interval → doesn't continue
         return;
       }
+      selectionMidis.push(ascendMidi(noteOf.get(id)!, selectionMidis[selectionMidis.length - 1]));
+    } else {
+      selectionMidis = selectionMidis.slice(0, next.length); // rewind
     }
     selection = next; // sound already played on pointerdown
     updateHighlights();
@@ -106,7 +135,7 @@ export function startGame(root: HTMLElement): void {
     phase = 'busy';
     shell.gridEl.classList.add('solved');
     shell.tokensEl.classList.add('solved');
-    audio.playChord(puzzle.solutionNotes); // chord only — they heard the tones while solving
+    audio.playChord(puzzle.solutionNotes, 0.22); // chord only, after the final tap note settles
     solved += 1;
     shell.counterEl.textContent = `Solved: ${solved}`;
     setTimeout(nextPuzzle, 1150);

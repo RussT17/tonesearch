@@ -94,6 +94,12 @@ export function playNote(note: Fifths): void {
   whenRunning((c) => playFreq(c, freq, 0, 0.28));
 }
 
+/** Play a tap tone at a specific MIDI note — for ascending selection feedback. */
+export function playNoteMidi(midi: number): void {
+  if (muted) return;
+  whenRunning((c) => playFreq(c, midiToFreq(midi), 0, 0.28));
+}
+
 /** Root-on-bottom voicing: root lowest, other tones wrapped up above it. */
 function voicedMidis(notes: readonly Fifths[]): number[] {
   const rootMidi = BASE_MIDI + pitchClass(notes[0]!);
