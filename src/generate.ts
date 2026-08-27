@@ -44,6 +44,19 @@ export function isSolution(selectedNotes: readonly Fifths[], pattern: Pattern): 
   return iv.every((interval, i) => selectedNotes[i]! - interval === base);
 }
 
+/**
+ * True if `selectedNotes` correctly realizes the FIRST notes of the pattern
+ * relative to some root — a valid partial path. Used for per-step validation:
+ * a tap is allowed only if it keeps the selection a valid prefix.
+ */
+export function isPrefix(selectedNotes: readonly Fifths[], pattern: Pattern): boolean {
+  const iv = pattern.intervals;
+  if (selectedNotes.length === 0) return true;
+  if (selectedNotes.length > iv.length) return false;
+  const base = selectedNotes[0]! - iv[0]!;
+  return selectedNotes.every((n, i) => n - iv[i]! === base);
+}
+
 /** Roots in the pool for which every resulting note stays within plausibleBounds. */
 export function validRoots(pattern: Pattern, cfg: Config): Fifths[] {
   const [lo, hi] = cfg.rootPool;

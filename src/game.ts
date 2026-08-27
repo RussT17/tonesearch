@@ -1,9 +1,18 @@
 // game.ts — the shell orchestrator. Holds game state and wires input → audio →
 // render → solve flow (docs/03-full-spec.md §5, §7).
 
-import { generatePuzzle, isSolution, type Puzzle } from './generate';
+import { generatePuzzle, isPrefix, type Puzzle } from './generate';
 import { DEFAULT_CONFIG } from './config';
-import { mountShell, renderGrid, renderTokens, drawPath, type Shell, type GridView } from './render';
+import {
+  mountShell,
+  renderGrid,
+  renderTokens,
+  drawPath,
+  drawTokenLine,
+  type Shell,
+  type GridView,
+  type TokenView,
+} from './render';
 import { updateSelection } from './input';
 import * as audio from './audio';
 
@@ -14,6 +23,7 @@ export function startGame(root: HTMLElement): void {
 
   let puzzle!: Puzzle;
   let view!: GridView;
+  let tokenView!: TokenView;
   let selection: number[] = [];
   let solved = 0;
   let phase: Phase = 'playing';
@@ -26,9 +36,14 @@ export function startGame(root: HTMLElement): void {
     return Math.abs(ca.col - cb.col) + Math.abs(ca.row - cb.row) === 1;
   };
 
-  const highlight = (): void => {
+  // Sync both views to the current selection: grid cells + path line, and the
+  // target's satisfied diamonds + pink line (incremental).
+  const updateHighlights = (): void => {
     const sel = new Set(selection);
     view.cellEls.forEach((el, id) => el.classList.toggle('selected', sel.has(id)));
+    drawPath(view, selection);
+    tokenView.tokenEls.forEach((el, i) => el.classList.toggle('selected', i < selection.length));
+    drawTokenLine(tokenView, selection.length);
   };
 
   const wireCells = (): void => {
@@ -43,9 +58,9 @@ export function startGame(root: HTMLElement): void {
 
   const layout = (): void => {
     view = renderGrid(shell.stageEl, shell.gridEl, puzzle);
+    tokenView = renderTokens(shell.tokensEl, puzzle);
     wireCells();
-    highlight();
-    drawPath(view, selection);
+    updateHighlights();
   };
 
   const newPuzzle = (): void => {
@@ -53,48 +68,39 @@ export function startGame(root: HTMLElement): void {
     selection = [];
     coordOf = new Map(puzzle.cells.map((c) => [c.id, { col: c.col, row: c.row }]));
     noteOf = new Map(puzzle.cells.map((c) => [c.id, c.note]));
-    renderTokens(shell.tokensEl, puzzle);
     layout();
     if (import.meta.env.DEV) (window as unknown as { __solution: number[] }).__solution = puzzle.solutionPath;
   };
 
-  const nudge = (id: number): void => {
-    const el = view.cellEls.get(id);
-    if (!el) return;
-    el.classList.add('nudge');
-    setTimeout(() => el.classList.remove('nudge'), 200);
+  const shake = (): void => {
+    shell.gridEl.classList.add('shake');
+    setTimeout(() => shell.gridEl.classList.remove('shake'), 320);
   };
 
   function onTap(id: number): void {
     if (phase !== 'playing') return;
     const next = updateSelection(selection, id, adjacent);
     if (next === selection) {
-      nudge(id); // rejected (non-adjacent) — updateSelection returns the same ref
+      shake(); // non-adjacent → doesn't continue the sequence
       return;
     }
+    if (next.length > selection.length) {
+      // appended a cell — per-step validation: it must continue the sequence
+      const notes = next.map((cid) => noteOf.get(cid)!);
+      if (!isPrefix(notes, puzzle.pattern)) {
+        shake(); // wrong interval → doesn't continue
+        return;
+      }
+    }
     selection = next; // sound already played on pointerdown
-    highlight();
-    drawPath(view, selection);
-    if (selection.length === puzzle.solutionNotes.length) check();
-  }
-
-  function check(): void {
-    const notes = selection.map((id) => noteOf.get(id)!);
-    if (isSolution(notes, puzzle.pattern)) onSolve();
-    else onWrong();
-  }
-
-  function onWrong(): void {
-    shell.gridEl.classList.add('shake');
-    setTimeout(() => shell.gridEl.classList.remove('shake'), 320);
-    selection = selection.slice(0, -1); // pop last, keep the correct prefix
-    highlight();
-    drawPath(view, selection);
+    updateHighlights();
+    if (selection.length === puzzle.solutionNotes.length) onSolve();
   }
 
   function onSolve(): void {
     phase = 'busy';
     shell.gridEl.classList.add('solved');
+    shell.tokensEl.classList.add('solved');
     audio.playSequence(puzzle.solutionNotes);
     solved += 1;
     shell.counterEl.textContent = `Solved: ${solved}`;
@@ -105,15 +111,16 @@ export function startGame(root: HTMLElement): void {
     if (phase !== 'playing') return;
     phase = 'busy';
     selection = puzzle.solutionPath.slice();
-    highlight();
-    drawPath(view, selection);
+    updateHighlights();
     shell.gridEl.classList.add('solved');
+    shell.tokensEl.classList.add('solved');
     audio.playSequence(puzzle.solutionNotes);
     setTimeout(nextPuzzle, 1400); // Give Up: reveal, then advance (no increment)
   }
 
   function nextPuzzle(): void {
     shell.gridEl.classList.remove('solved');
+    shell.tokensEl.classList.remove('solved');
     shell.stageEl.classList.add('fade');
     setTimeout(() => {
       newPuzzle();

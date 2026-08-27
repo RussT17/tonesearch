@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generatePuzzle, validRoots, isSolution, type Puzzle } from '../generate';
+import { generatePuzzle, validRoots, isSolution, isPrefix, type Puzzle } from '../generate';
 import { DEFAULT_CONFIG } from '../config';
 import { BANK } from '../bank';
 import { footprint, aspect } from '../geometry';
@@ -74,6 +74,20 @@ describe('generatePuzzle invariants (over many seeds)', () => {
 
   it('is deterministic: same seed ⇒ identical puzzle', () => {
     expect(generatePuzzle(cfg, 12345)).toEqual(generatePuzzle(cfg, 12345));
+  });
+});
+
+describe('isPrefix (per-step validation)', () => {
+  it('accepts every growing prefix of a solution, rejects wrong continuations', () => {
+    const p = generatePuzzle(cfg, 2);
+    const notes = p.solutionNotes;
+    for (let k = 0; k <= notes.length; k++) {
+      expect(isPrefix(notes.slice(0, k), p.pattern)).toBe(true);
+    }
+    // a wrong second note (not the pattern's 2nd interval from the root) → rejected
+    expect(isPrefix([notes[0]!, notes[0]! + 1], p.pattern)).toBe(false);
+    // longer than the pattern → rejected
+    expect(isPrefix([...notes, notes[0]!], p.pattern)).toBe(false);
   });
 });
 

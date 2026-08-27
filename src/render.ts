@@ -122,21 +122,79 @@ export function renderGrid(stageEl: HTMLElement, gridEl: HTMLElement, puzzle: Pu
   return { cellEls, polyline, centers };
 }
 
-/** Draw the interval tokens (R – m3 – P5 …) below the grid. */
-export function renderTokens(tokensEl: HTMLElement, puzzle: Puzzle): void {
+/** References to the rendered target row, so game.ts can highlight it in step. */
+export interface TokenView {
+  tokenEls: Map<number, HTMLElement>;
+  polyline: SVGPolylineElement;
+  centers: Map<number, { x: number; y: number }>;
+}
+
+const TOKEN_MAX_D = 66; // cap so target diamonds are ~as large as puzzle ones
+const TOKEN_GAP = 1.28; // center spacing as a multiple of a diamond's diagonal
+
+/**
+ * Draw the target intervals as puzzle-style diamonds in a horizontal row, sized
+ * to fit the container width (capped), with an SVG overlay for the pink path
+ * line. Font is scaled to the diamond so the widest labels (aug2/dim5) fit.
+ */
+export function renderTokens(tokensEl: HTMLElement, puzzle: Puzzle): TokenView {
   tokensEl.innerHTML = '';
-  puzzle.pattern.intervals.forEach((iv, i) => {
-    if (i > 0) {
-      const sep = document.createElement('span');
-      sep.className = 'token-sep';
-      sep.textContent = '–';
-      tokensEl.append(sep);
-    }
-    const t = document.createElement('span');
-    t.className = 'token';
-    t.textContent = intervalName(iv);
-    tokensEl.append(t);
+  const intervals = puzzle.pattern.intervals;
+  const n = intervals.length;
+
+  const availW = Math.max(tokensEl.clientWidth - 12, 160);
+  // total row width = d√2 · ((n−1)·GAP + 1); solve for the diamond side d.
+  const d = Math.min(TOKEN_MAX_D, availW / (Math.SQRT2 * ((n - 1) * TOKEN_GAP + 1)));
+  const diag = d * Math.SQRT2;
+  const s = TOKEN_GAP * diag; // center-to-center spacing
+  const rowW = (n - 1) * s + diag;
+  const rowH = diag;
+
+  tokensEl.style.width = `${rowW}px`;
+  tokensEl.style.height = `${rowH}px`;
+
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('class', 'path-overlay');
+  svg.setAttribute('width', `${rowW}`);
+  svg.setAttribute('height', `${rowH}`);
+  const polyline = document.createElementNS(SVG_NS, 'polyline') as SVGPolylineElement;
+  svg.append(polyline);
+  tokensEl.append(svg);
+
+  const fontPx = Math.max(12, Math.min(d * 0.4, 22));
+  const tokenEls = new Map<number, HTMLElement>();
+  const centers = new Map<number, { x: number; y: number }>();
+
+  intervals.forEach((iv, i) => {
+    const cx = diag / 2 + i * s;
+    const cy = rowH / 2;
+    centers.set(i, { x: cx, y: cy });
+    const div = document.createElement('div');
+    div.className = 'cell token-diamond';
+    div.style.left = `${cx - d / 2}px`;
+    div.style.top = `${cy - d / 2}px`;
+    div.style.width = `${d}px`;
+    div.style.height = `${d}px`;
+    const glyph = document.createElement('span');
+    glyph.className = 'glyph';
+    glyph.style.fontSize = `${fontPx}px`;
+    glyph.textContent = intervalName(iv);
+    div.append(glyph);
+    tokensEl.append(div);
+    tokenEls.set(i, div);
   });
+
+  return { tokenEls, polyline, centers };
+}
+
+/** Draw the pink line through the first `count` satisfied target diamonds. */
+export function drawTokenLine(view: TokenView, count: number): void {
+  const pts: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const c = view.centers.get(i)!;
+    pts.push(`${c.x},${c.y}`);
+  }
+  view.polyline.setAttribute('points', pts.join(' '));
 }
 
 /** Update the SVG path line to pass through the given ordered cell ids. */

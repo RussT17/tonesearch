@@ -140,18 +140,19 @@ excluded combos are exactly the musically implausible triple-accidental ones.
 - **Input [F5]:** tap cells in order. Tapping an **already-selected** cell rewinds
   the path to just before it — it and every cell after it are unselected (tapping
   the last-selected cell is the pop-one special case) [C5]. A **Clear** control
-  resets the whole selection. Selecting a non-adjacent cell is rejected (with a
-  subtle nudge) [default].
-- **Submission [F5]:** **auto-check** the moment the path length equals the
-  sequence length — no submit button. The check is **root-agnostic**: a path wins
-  if `note[i] − note[0] == interval[i]` for all i (any root), per [§F6] — not by
-  matching the generator's specific root.
-- **Correct:** solve animation + audio playback + fade to next puzzle
-  (Section 7); increment the session counter.
-- **Wrong [C7, default]:** gentle shake, then **clear back one step** (pop the
-  last tap) so a correct prefix isn't lost; no penalty, no score, retry freely
-  (zen). Tapped notes still sounded (below). No per-step validation — the check
-  fires only at full length.
+  resets the whole selection.
+- **Per-step validation [revised in playtest — supersedes F5's original "no
+  per-step validation"]:** a tapped cell is accepted only if it **continues the
+  sequence** — i.e. the selection stays a valid prefix, `note[i] − note[0] ==
+  interval[i]` for every selected i (root-agnostic, any root, per [§F6]; the first
+  tap sets the root). A tap that does **not** continue — non-adjacent, or the wrong
+  interval — is **rejected with a shake** and the selection is unchanged. As each
+  cell is accepted, its **target diamond lights up and the pink path line extends**
+  — grid and target move in lockstep. (This makes the game more guided/forgiving
+  than the original find-the-whole-path check; a deliberate playtest choice.)
+- **Solved:** the moment the full sequence is satisfied (no separate submit — the
+  per-step checks already guarantee correctness) → solve animation + audio playback
+  + target & grid glow + fade to next puzzle (Section 7); increment the counter.
 - **Give Up [F5]:** a **Give Up** control **reveals the intended solution path**
   (brief highlight), then advances to the next puzzle. Does **not** increment the
   counter. Replaces a silent skip — giving up always shows the answer (the one
@@ -180,7 +181,9 @@ Web Audio API, synthesized (no samples).
 
 - **Aesthetic [R5]:** dark background, **neon purple** grid; calm, no timer.
 - **Layout:** top bar (difficulty label + **solved-this-session counter**);
-  center (the grid); bottom (the interval tokens, e.g. `R – m3 – P5 – m7`).
+  center (the grid); below it (the target sequence as **puzzle-style diamonds**,
+  e.g. `R m3 P5 m7`, highlighted incrementally with the same pink path line as the
+  grid as the player selects — see §5).
 - **45° grid orientation [default]:** the grid is displayed **rotated 45°** (a
   diamond lattice), matching the mockup. Grid *logic* stays in plain integer
   `(col, row)` space with orthogonal adjacency; the rotation is a **render-time

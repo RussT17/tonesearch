@@ -119,38 +119,20 @@ body {
   box-shadow: 0 0 14px var(--neon), inset 0 0 10px var(--neon-dim);
 }
 
-/* --- interval tokens (game content: filled neon pills) --- */
+/* --- target sequence: puzzle-style diamonds in a row --- */
 .tokens-label {
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 0.72rem;
   color: var(--text-dim);
-  padding: 0.25rem 1rem 0;
+  margin-bottom: 0.9rem;
 }
 .tokens {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem 0.75rem;
-  min-height: 3rem;
+  position: relative; /* holds absolutely-positioned diamonds + the line svg */
 }
-.token {
-  min-width: 2.6rem;
-  padding: 0.4rem 0.75rem;
-  text-align: center;
-  color: var(--neon-bright);
-  background: var(--neon-dim);
-  border: 1.5px solid var(--neon);
-  border-radius: 999px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  box-shadow: 0 0 10px var(--neon-dim);
-}
-.token-sep {
-  color: var(--text-dim);
+.token-diamond {
+  cursor: default; /* target diamonds share .cell's look but aren't tappable */
 }
 
 /* --- controls (utility chrome: hollow, muted) --- */
@@ -202,12 +184,12 @@ body {
 @keyframes nudge {
   50% { box-shadow: 0 0 14px var(--neon-bright); }
 }
-/* solved: brighten the path line and pulse the path cells */
-.grid.solved .path-overlay polyline {
+/* solved: brighten the path line and pulse the path cells (grid + target) */
+.solved .path-overlay polyline {
   stroke-width: 4;
   filter: drop-shadow(0 0 12px var(--neon-bright));
 }
-.grid.solved .cell.selected {
+.solved .cell.selected {
   animation: solvePulse 0.7s ease;
   background: rgba(224, 170, 255, 0.4);
   box-shadow: 0 0 20px var(--neon-bright), inset 0 0 12px var(--neon-dim);
