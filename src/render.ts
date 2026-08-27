@@ -38,6 +38,7 @@ export function mountShell(root: HTMLElement): Shell {
   const gridEl = el('div', 'grid');
   stageEl.append(gridEl);
 
+  const tokensLabel = el('div', 'tokens-label', 'Find this sequence');
   const tokensEl = el('div', 'tokens');
 
   const controls = el('div', 'controls');
@@ -49,7 +50,7 @@ export function mountShell(root: HTMLElement): Shell {
   stageEl.setAttribute('aria-label', 'Note grid');
   tokensEl.setAttribute('aria-label', 'Target intervals');
 
-  root.append(topbar, stageEl, tokensEl, controls);
+  root.append(topbar, stageEl, tokensLabel, tokensEl, controls);
   return { difficultyEl, counterEl, stageEl, gridEl, tokensEl, giveUpBtn, muteBtn };
 }
 

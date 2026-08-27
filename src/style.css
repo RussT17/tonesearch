@@ -108,51 +108,64 @@ body {
   box-shadow: 0 0 14px var(--neon), inset 0 0 10px var(--neon-dim);
 }
 
-/* --- interval tokens --- */
+/* --- interval tokens (game content: filled neon pills) --- */
+.tokens-label {
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  padding: 0.25rem 1rem 0;
+}
 .tokens {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
   gap: 0.5rem;
-  padding: 1rem;
-  min-height: 3.5rem;
+  padding: 0.5rem 1rem 0.75rem;
+  min-height: 3rem;
 }
 .token {
   min-width: 2.6rem;
-  padding: 0.4rem 0.7rem;
+  padding: 0.4rem 0.75rem;
   text-align: center;
+  color: var(--neon-bright);
+  background: var(--neon-dim);
   border: 1.5px solid var(--neon);
   border-radius: 999px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  box-shadow: 0 0 8px var(--neon-dim);
+  box-shadow: 0 0 10px var(--neon-dim);
 }
 .token-sep {
   color: var(--text-dim);
 }
 
-/* --- controls --- */
+/* --- controls (utility chrome: hollow, muted) --- */
 .controls {
   display: flex;
   justify-content: center;
   gap: 0.75rem;
-  padding: 0 1rem 1.25rem;
+  padding: 0.25rem 1rem 2rem;
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
 }
 .controls button {
   font: inherit;
-  font-size: 0.95rem;
-  color: var(--text);
+  font-size: 0.9rem;
+  color: var(--text-dim);
   background: transparent;
-  border: 1.5px solid var(--neon);
-  border-radius: 999px;
-  padding: 0.55rem 1.2rem;
-  min-height: 2.75rem;
+  border: 1px solid rgba(236, 231, 245, 0.22);
+  border-radius: 10px;
+  padding: 0.5rem 1.1rem;
+  min-height: 2.6rem;
   cursor: pointer;
-  transition: background 0.12s ease;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 .controls button:active {
-  background: var(--neon-dim);
+  background: rgba(236, 231, 245, 0.08);
+  color: var(--text);
+  border-color: rgba(236, 231, 245, 0.4);
 }
 
 /* --- transitions & feedback --- */
