@@ -133,15 +133,9 @@ export function startGame(root: HTMLElement): void {
     if (phase === 'playing') layout();
   });
 
-  // Keep audio unlocked: construct the context now (suspended), then resume on
-  // the earliest gesture and whenever the tab becomes visible again (mobile
-  // re-suspends on background).
-  audio.prime();
-  document.addEventListener('pointerdown', () => audio.unlock(), { capture: true });
-  document.addEventListener('touchstart', () => audio.unlock(), { capture: true, passive: true });
+  // Resume audio when returning from background (mobile suspends it there).
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) audio.stopKeepAlive(); // let the BT link idle in background
-    else audio.unlock(); // foregrounded → resume + restart keep-alive
+    if (!document.hidden) audio.unlock();
   });
 
   newPuzzle();

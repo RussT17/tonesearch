@@ -1,7 +1,9 @@
 // audio.ts — Web Audio synthesis. Tap tones and solve playback. One shared
-// AudioContext, unlocked on the first user gesture (mobile starts it suspended
-// with a frozen clock; scheduling then would queue every note at one past time
-// and fire them all at once on resume — so we only schedule once it's running).
+// AudioContext, resumed on a user gesture. Notes are scheduled only once the
+// context is actually running: mobile starts it suspended with a frozen clock,
+// so scheduling then would queue every note at one past time and fire them all
+// at once on resume. (First-note latency over Bluetooth is the A2DP link's
+// cold-start — a platform cost we accept rather than chase.)
 
 import { pitchClass } from './theory';
 import type { Fifths } from './theory';
@@ -9,15 +11,9 @@ import type { Fifths } from './theory';
 const MUTE_KEY = 'tonesearch.muted';
 const BASE_MIDI = 60; // C4 — the fixed reference octave (docs §6/E3)
 
-const VOICE: { type: OscillatorType; attack: number; decay: number } = {
-  type: 'triangle',
-  attack: 0.02,
-  decay: 0.6,
-};
+const VOICE = { type: 'triangle' as OscillatorType, attack: 0.02, decay: 0.6 };
 
 let ctx: AudioContext | null = null;
-let warmed = false;
-let keepAlive: { osc: OscillatorNode; gain: GainNode } | null = null;
 let muted = loadMuted();
 
 function loadMuted(): boolean {
@@ -33,47 +29,15 @@ function audioCtx(): AudioContext {
     const Ctor =
       window.AudioContext ??
       (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    ctx = new Ctor({ latencyHint: 'interactive' });
+    ctx = new Ctor();
   }
   return ctx;
 }
 
-/**
- * Keep the output genuinely active with an INAUDIBLE but NON-ZERO signal so a
- * Bluetooth (A2DP) link never idles. Pure digital silence (all-zero samples)
- * lets the BT transport sleep, so the first real note pays a ~100–150ms
- * cold-start; a near-ultrasonic tone at ~-62 dBFS holds the link streaming
- * while staying inaudible.
- */
-function startKeepAlive(c: AudioContext): void {
-  if (keepAlive) return;
-  const osc = c.createOscillator();
-  osc.type = 'sine';
-  osc.frequency.value = Math.min(20000, c.sampleRate / 2 - 1000); // near/above audible edge
-  const gain = c.createGain();
-  gain.gain.value = 0.0008; // ~-62 dBFS: non-zero energy, but inaudible
-  osc.connect(gain).connect(c.destination);
-  osc.start();
-  keepAlive = { osc, gain };
-}
-
-/** Build the band-limited 'triangle' wavetable once (silently) on the unlock
- * gesture so the first real note doesn't pay the one-time wavetable-init cost. */
-function warmOscillator(c: AudioContext): void {
-  const osc = c.createOscillator();
-  const gain = c.createGain();
-  osc.type = VOICE.type; // same waveform the real notes use
-  gain.gain.value = 0;
-  osc.connect(gain).connect(c.destination);
-  const t = c.currentTime;
-  osc.start(t);
-  osc.stop(t + 0.02);
-}
-
-/** Construct the (suspended) context at page load so the first gesture only
- * pays the resume cost, not construction. */
-export function prime(): void {
-  audioCtx();
+/** Resume the context on a user gesture (required on mobile). */
+export function unlock(): void {
+  const c = audioCtx();
+  if (c.state !== 'running') void c.resume();
 }
 
 export const isMuted = (): boolean => muted;
@@ -85,9 +49,6 @@ export function setMuted(m: boolean): void {
   } catch {
     /* storage may be unavailable */
   }
-  // No sound while muted → no need to hold the Bluetooth link open.
-  if (m) stopKeepAlive();
-  else if (ctx && !document.hidden) startKeepAlive(ctx);
 }
 
 export const toggleMuted = (): boolean => {
@@ -95,50 +56,10 @@ export const toggleMuted = (): boolean => {
   return muted;
 };
 
-/**
- * Wake the audio on a user gesture. Resumes the context and, once, plays a
- * one-sample silent buffer — the canonical trick that actually starts the
- * mobile audio hardware (a bare resume() sometimes leaves the clock frozen).
- */
-export function unlock(): void {
-  const c = audioCtx();
-  if (c.state !== 'running') void c.resume();
-  if (!warmed) {
-    warmed = true;
-    try {
-      warmOscillator(c); // pre-build the triangle wavetable (once)
-    } catch {
-      /* ignore */
-    }
-  }
-  if (!muted) {
-    try {
-      startKeepAlive(c); // (re)start; idempotent, gated to active play
-    } catch {
-      /* ignore */
-    }
-  }
-}
-
-/** Stop the keep-alive so the Bluetooth link can idle (saving battery) when the
- * game isn't in active play — tab backgrounded or muted. Restarted on the next
- * unlock (a foreground gesture / unmute). */
-export function stopKeepAlive(): void {
-  if (!keepAlive) return;
-  try {
-    keepAlive.osc.stop();
-  } catch {
-    /* already stopped */
-  }
-  keepAlive.osc.disconnect();
-  keepAlive.gain.disconnect();
-  keepAlive = null;
-}
-
 const midiToFreq = (midi: number): number => 440 * 2 ** ((midi - 69) / 12);
 
-/** Run `fn` with a definitely-running context — awaiting resume if needed, so a
- * note plays exactly once (never queued against a frozen clock). */
+/** Run `fn` with a running context — awaiting resume if needed, so a note plays
+ * exactly once (never queued against a frozen clock). */
 function whenRunning(fn: (c: AudioContext) => void): void {
   const c = audioCtx();
   if (c.state === 'running') {
