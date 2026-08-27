@@ -145,7 +145,8 @@ const TOKEN_PITCH_MAX = 130; // cap on center-to-center spacing (keeps desktop s
  * so a puzzle diamond never exceeds a target diamond.
  */
 export function targetPitch(availW: number): number {
-  return Math.min(TOKEN_PITCH_MAX, availW / TOKEN_REF_LEN);
+  const w = Math.max(availW, 200); // guard against transient 0/negative widths
+  return Math.min(TOKEN_PITCH_MAX, w / TOKEN_REF_LEN);
 }
 
 /**

@@ -106,7 +106,7 @@ export function startGame(root: HTMLElement): void {
     phase = 'busy';
     shell.gridEl.classList.add('solved');
     shell.tokensEl.classList.add('solved');
-    audio.playSequence(puzzle.solutionNotes);
+    audio.playChord(puzzle.solutionNotes); // chord only — they heard the tones while solving
     solved += 1;
     shell.counterEl.textContent = `Solved: ${solved}`;
     setTimeout(nextPuzzle, 1150);

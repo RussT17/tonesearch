@@ -71,7 +71,9 @@ function whenRunning(fn: (c: AudioContext) => void): void {
   }
 }
 
-function playFreq(c: AudioContext, freq: number, when: number, peak: number): void {
+const CHORD_DECAY = VOICE.decay * 2; // hold the solved chord twice as long
+
+function playFreq(c: AudioContext, freq: number, when: number, peak: number, decay = VOICE.decay): void {
   const t0 = c.currentTime + when;
   const osc = c.createOscillator();
   const gain = c.createGain();
@@ -79,10 +81,10 @@ function playFreq(c: AudioContext, freq: number, when: number, peak: number): vo
   osc.frequency.value = freq;
   gain.gain.setValueAtTime(0.0001, t0);
   gain.gain.exponentialRampToValueAtTime(peak, t0 + VOICE.attack);
-  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + VOICE.decay);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + decay);
   osc.connect(gain).connect(c.destination);
   osc.start(t0);
-  osc.stop(t0 + VOICE.decay + 0.05);
+  osc.stop(t0 + decay + 0.05);
 }
 
 /** Play a single note (tap feedback) in the fixed reference octave. */
@@ -104,15 +106,23 @@ function voicedMidis(notes: readonly Fifths[]): number[] {
     .sort((a, b) => a - b);
 }
 
-/** Play the solved chord: arpeggiate root→up, then strike it together. */
-export function playSequence(notes: readonly Fifths[], gap = 0.18, chordAtEnd = true): void {
+/** Strike the chord (all tones together), root on the bottom, held long. Used
+ * on a solve — the player has already heard the tones while selecting. */
+export function playChord(notes: readonly Fifths[], when = 0): void {
+  if (muted) return;
+  const midis = voicedMidis(notes);
+  whenRunning((c) => {
+    for (const m of midis) playFreq(c, midiToFreq(m), when, 0.16, CHORD_DECAY);
+  });
+}
+
+/** Arpeggiate root→up, then strike the held chord. Used on Give Up (reveal). */
+export function playSequence(notes: readonly Fifths[], gap = 0.18): void {
   if (muted) return;
   const midis = voicedMidis(notes);
   whenRunning((c) => {
     midis.forEach((m, i) => playFreq(c, midiToFreq(m), i * gap, 0.26));
-    if (chordAtEnd) {
-      const t = midis.length * gap + 0.15;
-      for (const m of midis) playFreq(c, midiToFreq(m), t, 0.16);
-    }
+    const t = midis.length * gap + 0.15;
+    for (const m of midis) playFreq(c, midiToFreq(m), t, 0.16, CHORD_DECAY);
   });
 }
