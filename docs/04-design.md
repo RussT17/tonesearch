@@ -99,11 +99,9 @@ Helpers (degrade gracefully past ±2 accidentals, though the in-play clamp
 
 ```ts
 const dup = (s: string, k: number) => s.repeat(k);          // 'aug'→'augaug' for k≥2
-function accidental(k: number): string {                     // 0 natural, + sharp, − flat
-  if (k === 0) return '';
-  const one = k > 0 ? '♯' : '♭', two = k > 0 ? '𝄪' : '𝄫', n = Math.abs(k);
-  return two.repeat(n >> 1) + one.repeat(n & 1);             // pairs → double glyph
-}
+// doubled ♯/♭ (e.g. "♯♯"), NOT 𝄪/𝄫 Unicode — poor font support (see §11)
+const accidental = (k: number): string =>
+  k === 0 ? '' : (k > 0 ? '♯' : '♭').repeat(Math.abs(k));
 ```
 
 Verified against the Music Theory Doc tables (R, P5, M2…dim7 and note F♭…B♯), and
@@ -264,7 +262,7 @@ src/… (incl. geometry.ts) · .github/workflows/deploy.yml · docs/ (unchanged)
   actually concentrates (not `findPath`) → bounded retries then restart.
 - 45° tiling geometry (`geometry.ts`) + upright glyph counter-rotation + edge-cell
   clip inflation is fiddly → expect a render tuning pass (step 5).
-- Double-accidental **glyph** choice (`𝄪`/`𝄫` vs `♯♯`/`♭♭`) — font support
-  varies; decide during step 2/5.
+- Double-accidental **glyph**: **decided `♯♯`/`♭♭`** (doubled singles) — the
+  `𝄪`/`𝄫` Unicode rendered as an "x"/tofu on the target fonts (confirmed in step 5).
 - iOS Safari audio-unlock and tap latency → validate early on the Simulator.
 ```

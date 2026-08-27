@@ -14,13 +14,13 @@ const LETTERS = ['F', 'C', 'G', 'D', 'A', 'E', 'B'] as const;
 /** JS `%` is sign-preserving; this normalizes into `[0, n)`. */
 const mod = (x: number, n: number): number => ((x % n) + n) % n;
 
-/** Accidental suffix for `k`: 0 natural, +k sharps, −k flats (pairs → 𝄪/𝄫). */
+/**
+ * Accidental suffix for `k`: 0 natural, +k sharps, −k flats. Uses doubled
+ * ♯/♭ (e.g. "♯♯") rather than the 𝄪/𝄫 Unicode, which many fonts don't render.
+ */
 function accidental(k: number): string {
   if (k === 0) return '';
-  const one = k > 0 ? '♯' : '♭';
-  const two = k > 0 ? '𝄪' : '𝄫';
-  const n = Math.abs(k);
-  return two.repeat(n >> 1) + one.repeat(n & 1);
+  return (k > 0 ? '♯' : '♭').repeat(Math.abs(k));
 }
 
 /** Spell a note, e.g. 0→"D", −4→"B♭", +12→"C𝄪". Correct for any integer. */

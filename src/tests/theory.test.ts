@@ -13,10 +13,10 @@ import {
 // Ground-truth tables from docs/00-music-theory.md, extended past F♭…B♯ into the
 // double-accidental spellings the game actually produces (clamp is [−12,+12]).
 const NOTE_NAMES: Record<number, string> = {
-  [-12]: 'E𝄫', [-11]: 'B𝄫', [-10]: 'F♭', [-9]: 'C♭', [-8]: 'G♭', [-7]: 'D♭',
+  [-12]: 'E♭♭', [-11]: 'B♭♭', [-10]: 'F♭', [-9]: 'C♭', [-8]: 'G♭', [-7]: 'D♭',
   [-6]: 'A♭', [-5]: 'E♭', [-4]: 'B♭', [-3]: 'F', [-2]: 'C', [-1]: 'G',
   [0]: 'D', [1]: 'A', [2]: 'E', [3]: 'B', [4]: 'F♯', [5]: 'C♯', [6]: 'G♯',
-  [7]: 'D♯', [8]: 'A♯', [9]: 'E♯', [10]: 'B♯', [11]: 'F𝄪', [12]: 'C𝄪',
+  [7]: 'D♯', [8]: 'A♯', [9]: 'E♯', [10]: 'B♯', [11]: 'F♯♯', [12]: 'C♯♯',
 };
 
 const INTERVAL_NAMES: Record<number, string> = {
@@ -35,7 +35,7 @@ describe('noteName', () => {
   it('produces the C♭ min7 double-flat spelling C♭ E𝄫 G♭ B𝄫', () => {
     const root = -9; // C♭
     const min7 = [0, -3, 1, -2]; // R, m3, P5, m7
-    expect(min7.map((iv) => noteName(noteFor(root, iv)))).toEqual(['C♭', 'E𝄫', 'G♭', 'B𝄫']);
+    expect(min7.map((iv) => noteName(noteFor(root, iv)))).toEqual(['C♭', 'E♭♭', 'G♭', 'B♭♭']);
   });
 
   it('is stable under a monotonic sweep and never throws', () => {

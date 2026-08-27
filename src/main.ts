@@ -1,6 +1,19 @@
-// Bootstrap. Step 1 placeholder — proves the Vite + TS pipeline builds and
-// deploys. Real game wiring (game.ts) replaces this in later build steps.
-const app = document.querySelector<HTMLDivElement>('#app');
-if (app) {
-  app.textContent = 'ToneSearch — scaffold live.';
-}
+// Bootstrap. Step 5: mount the shell and statically render one generated puzzle
+// (no interaction yet — that arrives with input.ts/game.ts).
+import './style.css';
+import { mountShell, renderGrid, renderTokens } from './render';
+import { generatePuzzle } from './generate';
+import { DEFAULT_CONFIG } from './config';
+
+const app = document.querySelector<HTMLDivElement>('#app')!;
+const shell = mountShell(app);
+
+const puzzle = generatePuzzle(DEFAULT_CONFIG, Math.floor(Math.random() * 1e9));
+renderTokens(shell.tokensEl, puzzle);
+
+const draw = (): void => {
+  renderGrid(shell.stageEl, shell.gridEl, puzzle);
+};
+
+requestAnimationFrame(draw);
+window.addEventListener('resize', draw);
