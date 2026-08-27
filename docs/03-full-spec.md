@@ -74,23 +74,36 @@ if **every** resulting note stays within **[E𝄫 (−12) … C𝄪 (+12)]** on 
 line — i.e. no sequence note is pushed flatter than E𝄫 or sharper than C𝄪. This
 dynamically narrows the usable roots per pattern (patterns that reach far in one
 direction admit fewer extreme roots), and it defines the outer bound for decoy
-fill (§4).
+fill (§4). **Intended consequence:** this systematically skews which chord×key
+pairings appear — sharp-reaching chords are absent on sharp roots and vice versa
+(e.g. no E♯ dom7♯9, which would need a triple sharp). Every pattern still keeps a
+healthy root set (the tightest admit ~13 of 19), so generation never hangs; the
+excluded combos are exactly the musically implausible triple-accidental ones.
 
 ## 4. Puzzle generation
 
 1. **Choose pattern** from the bank (difficulty-weighted [param]).
 2. **Choose root** from the root pool (center-weighted [param]).
 3. **Compute solution notes** = `root + interval` for each token.
-4. **Build the empty grid shape _first_ [default]:** grow an irregular connected
-   blob to the target cell count [param] by attaching cells to the shape.
-   **Shape-quality rules [default]:** growth favors cells adjacent to
-   **multiple** existing cells (→ compact, blob-like, not straggly); constrain
-   the aspect ratio of the **rotated on-screen footprint** [param] (see §7 — the
-   grid is displayed at 45°) so it fits phone portrait; and **avoid fully
-   enclosed empty holes**.
-   > Building the shape *before* the path is deliberate: growing the shape
-   > *around* a pre-placed path would bias the solution toward the shape's
-   > center, partly re-leaking the root. Shape-first keeps placement unbiased.
+4. **Build the empty grid shape _first_ [default]** by **3×3-block accretion**
+   inside a bounded start grid (dimensions [param]):
+   a. Pick a random seed cell; select the in-bounds 3×3 block centered on it.
+   b. While `selected < gridCellCount` [param]: pick a random **unselected** cell
+      adjacent to the selection (a frontier cell) and select the in-bounds 3×3
+      block centered on it (adding whatever isn't already selected).
+   Every addition being a 3×3 block makes the shape inherently **compact and
+   rounded** (no straggle), so no neighbor heuristic is needed. **Naturally
+   occurring holes are allowed** and left as-is (rare under 3×3 accretion, and a
+   fine part of the irregular look) — no fill pass. A block adds up to 9 cells, so
+   the target is **met or slightly exceeded** — `gridCellCount` is *approximate*,
+   not exact. The bounded
+   start grid caps the extent (invariant: `area(startGrid) ≥ gridCellCount +
+   margin`). The finished shape is **centered for display** — purely visual, and
+   it does **not** bias the solution (the path is placed randomly within the shape
+   at step 5). A rotated-footprint aspect cap [param] stays as a cheap guard,
+   though round accretion rarely trips it.
+   > Building the shape *before* the path is deliberate: growing *around* a
+   > pre-placed path would bias the solution toward center and re-leak the root.
 5. **Lay the solution path _inside_ the shape:** find a random self-avoiding
    **orthogonal** path of length = sequence length within the blob (randomized
    DFS from a random start cell). If no path of that length exists (rare for a
@@ -98,13 +111,17 @@ fill (§4).
 6. **Place solution notes** on the path cells in order.
 7. **Fill decoy cells — [F7]:**
    a. Let `S` = solution note set, spanning `[minS, maxS]` on the line of fifths.
-   b. Window width `W = max(W_param, span(S))`.
+   b. Window width `W` (a **position count**) `= max(W_param, (maxS − minS) + 1)`.
+      Invariant: `W_param ≥ max-pattern-span + 1` (asserted in config/tests) so the
+      window always has slack to offset — the anti-cheat depends on `W > span(S)`.
    c. Valid window left-edges `L ∈ [maxS − W + 1, minS]`; **pick `L` uniformly at
       random** (non-centered placement falls out of this).
    d. **Shift inward** if `[L, L+W−1]` extends past the plausible outer bounds
       `[B_min, B_max] = [−12, +12]` (E𝄫 … C𝄪) — the same bound as the root×pattern
       rule (§3) — so decoys never fall in double-accidental zones that could
-      never occur naturally.
+      never occur naturally. Near a bound, **randomize which side absorbs the
+      clamp** so the window keeps offset freedom rather than collapsing to a
+      near-centered (root-leaking) placement.
    e. Sample each decoy note from the window's fifths integers [param weighting];
       **repeats allowed [B7]**.
 8. **Solvability [F6]:** the embedded path guarantees ≥1 solution. **No** second-
@@ -116,17 +133,29 @@ fill (§4).
   cells [C9].
 - **Path rule:** each cell used **at most once** — this alone prevents any
   self-crossing under orthogonal movement [C2/C3].
-- **Input [F5]:** tap cells in order. Tapping the **last-selected** cell
-  backtracks one step; a **Clear** control resets the whole selection [C5].
-  Selecting a non-adjacent cell is rejected (with a subtle nudge) [default].
+- **First tap = root [clarification]:** because v1 is root-position (every
+  sequence starts on R), the first cell of any valid path **is** the root. The
+  anti-cheat's job is thus to hide *which* cell is the root, not that a root
+  exists.
+- **Input [F5]:** tap cells in order. Tapping an **already-selected** cell rewinds
+  the path to just before it — it and every cell after it are unselected (tapping
+  the last-selected cell is the pop-one special case) [C5]. A **Clear** control
+  resets the whole selection. Selecting a non-adjacent cell is rejected (with a
+  subtle nudge) [default].
 - **Submission [F5]:** **auto-check** the moment the path length equals the
-  sequence length — no submit button.
+  sequence length — no submit button. The check is **root-agnostic**: a path wins
+  if `note[i] − note[0] == interval[i]` for all i (any root), per [§F6] — not by
+  matching the generator's specific root.
 - **Correct:** solve animation + audio playback + fade to next puzzle
   (Section 7); increment the session counter.
-- **Wrong [C7, default]:** gentle shake + the selection fades away; no penalty,
-  no score, retry freely (zen). Tapped notes still sounded (below).
-- **Skip [F5]:** a **New puzzle** control regenerates without solving (does not
-  increment the counter).
+- **Wrong [C7, default]:** gentle shake, then **clear back one step** (pop the
+  last tap) so a correct prefix isn't lost; no penalty, no score, retry freely
+  (zen). Tapped notes still sounded (below). No per-step validation — the check
+  fires only at full length.
+- **Give Up [F5]:** a **Give Up** control **reveals the intended solution path**
+  (brief highlight), then advances to the next puzzle. Does **not** increment the
+  counter. Replaces a silent skip — giving up always shows the answer (the one
+  piece of reinforcement in v1; richer interval display is deferred to v2).
 
 ## 6. Audio — [F8]
 
@@ -140,8 +169,11 @@ Web Audio API, synthesized (no samples).
   — C♯ = D♭ in ET; only the *spelling* differs, which is the whole point.)
 - **Octave [E3]:** every note sounds in a **single fixed reference octave**
   [param] (comfortable mid-range), mapping fifths → pitch class → frequency.
-- **Solve playback [E4]:** play the solution notes **ascending in pitch**, spaced
-  by a gap [param], then optionally strike the full chord together [param bool].
+- **Solve playback [E4]:** play the solution notes with the **root on the bottom**
+  (octave-wrap the other tones above it, then ascending) so the chord keeps a clear
+  identity, spaced by a gap [param], then optionally strike the full chord together
+  [param bool]. In ET the *audio* is spelling-blind (C♯ = D♭ by sound), so the
+  on-screen note names carry the spelling learning, not the playback.
 - **Mute [E5]:** a persistent mute toggle (localStorage).
 
 ## 7. Visuals & UX — [F1 = v1 look]
@@ -170,9 +202,16 @@ Web Audio API, synthesized (no samples).
   only.
 - **Settings [H4]:** a small corner control for mute (and difficulty once tiers
   exist).
+- **Glyph legibility [default]:** with **full-variety** difficulty, double
+  accidentals (E𝄫, C𝄪, B𝄫, F𝄪) appear regularly in solutions *and* decoys — the
+  widest, hardest glyphs. Confirm they render clearly inside a 45° diamond cell at
+  the min tap-target size (≥ 44 px); pick a glyph set that stays legible (see the
+  `𝄪/𝄫` vs `♯♯/♭♭` question in the Design Doc).
 - **Accessibility [H6]:** honor `prefers-reduced-motion` (shorten/skip
-  animations); ensure neon-on-dark contrast; cells carry their note name as text
-  (screen-reader friendly).
+  animations); ensure neon-on-dark contrast; cells carry their note name as text.
+  *Caveat:* the note names are readable, but the puzzle is an irreducibly
+  **spatial** path task on a rotated lattice — it is **not** meaningfully
+  screen-reader-playable. Don't overstate SR support.
 
 ## 8. Difficulty — [F1]
 
@@ -190,12 +229,15 @@ subset & weighting, root-pool width & weighting, decoy-window width.
 
 ## 10. Scope
 
-**In v1:** everything above — visual mode, one preset, tap input, chord bank,
-root-position, orthogonal grid, tap+solve audio, session counter, skip.
+**In v1:** everything above — visual mode, one preset (full-variety), tap input,
+chord bank, root-position, orthogonal grid, tap+solve audio, session counter,
+Give-Up-with-reveal.
 
 **Deferred to v2+ [F1]:** audio-only mode; off-root / rootless voicings; diagonal
 adjacency; multiple difficulty tiers & selector; hints; drag-to-trace input;
-particle effects; scales in the bank; streaks / personal-best scoring.
+particle effects; scales in the bank; streaks / personal-best scoring; **richer
+interval feedback** (labeling each path note with its interval / naming the key on
+solve — the interval-display idea parked from the Step-3 feedback review).
 
 **Non-goals [I2]:** accounts, networking, monetization, teaching theory from
 scratch.
@@ -204,9 +246,9 @@ scratch.
 
 | Param | Meaning | Start |
 |-------|---------|-------|
-| `gridCellCount` | total cells in the grid | 18 |
+| `gridCellCount` | target cell count (met or slightly exceeded — see §4) | 18 |
+| `startGridDims` | bounded start grid W×H for 3×3 accretion (area ≥ target+margin) | 8×8 |
 | `gridMaxAspect` | aspect-ratio cap on the **rotated** on-screen footprint (portrait-friendly) | ~1.4 |
-| `growthCompactness` | bias toward cells with more existing neighbors | mild–strong |
 | `patternWeights` | relative frequency of each bank pattern | uniform |
 | `rootPool` | allowed root range (fifths) | [−9, +9] |
 | `rootCenterBias` | weighting toward central (common) roots | mild |
