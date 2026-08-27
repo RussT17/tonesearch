@@ -17,6 +17,7 @@ const VOICE: { type: OscillatorType; attack: number; decay: number } = {
 
 let ctx: AudioContext | null = null;
 let warmed = false;
+let keepAlive: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
 let muted = loadMuted();
 
 function loadMuted(): boolean {
@@ -32,9 +33,25 @@ function audioCtx(): AudioContext {
     const Ctor =
       window.AudioContext ??
       (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    ctx = new Ctor();
+    ctx = new Ctor({ latencyHint: 'interactive' });
   }
   return ctx;
+}
+
+/** Keep a silent looping source running so the audio output stream stays hot —
+ * without it, the first note after an idle stream pays a cold-start latency. */
+function startKeepAlive(c: AudioContext): void {
+  if (keepAlive) return;
+  const frames = Math.max(1, Math.floor(c.sampleRate * 0.5));
+  const buffer = c.createBuffer(1, frames, c.sampleRate); // all zeros = silence
+  const src = c.createBufferSource();
+  src.buffer = buffer;
+  src.loop = true;
+  const gain = c.createGain();
+  gain.gain.value = 0;
+  src.connect(gain).connect(c.destination);
+  src.start();
+  keepAlive = { src, gain };
 }
 
 /** Construct the (suspended) context at page load so the first gesture only
@@ -70,10 +87,7 @@ export function unlock(): void {
   if (!warmed) {
     warmed = true;
     try {
-      const src = c.createBufferSource();
-      src.buffer = c.createBuffer(1, 1, c.sampleRate);
-      src.connect(c.destination);
-      src.start(0);
+      startKeepAlive(c); // keep the output stream hot → no first-note cold start
     } catch {
       /* ignore */
     }
