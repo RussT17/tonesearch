@@ -66,7 +66,10 @@ export function startGame(root: HTMLElement): void {
       // its own pitch in context.
       el.onpointerdown = () => {
         if (phase !== 'playing') return;
-        if (selection.includes(id)) return; // re-tapping a selected note rewinds → no sound
+        if (selection.includes(id)) {
+          audio.playCancel(); // re-tapping a selected note rewinds → deselect blip
+          return;
+        }
         audio.playNoteMidi(ascendMidi(noteOf.get(id)!, selectionMidis[selectionMidis.length - 1]));
       };
       el.onclick = () => onTap(id);

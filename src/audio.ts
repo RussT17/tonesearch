@@ -100,6 +100,26 @@ export function playNoteMidi(midi: number): void {
   whenRunning((c) => playFreq(c, midiToFreq(midi), 0, 0.28));
 }
 
+/** A short toneless "uncheck"/bubble blip — a quick downward sine glide. Played
+ * when the player deselects (re-taps a selected note to rewind). */
+export function playCancel(): void {
+  if (muted) return;
+  whenRunning((c) => {
+    const t0 = c.currentTime;
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(440, t0);
+    osc.frequency.exponentialRampToValueAtTime(150, t0 + 0.11);
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.16, t0 + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.15);
+    osc.connect(gain).connect(c.destination);
+    osc.start(t0);
+    osc.stop(t0 + 0.17);
+  });
+}
+
 /** Root-on-bottom voicing: root lowest, other tones wrapped up above it. */
 function voicedMidis(notes: readonly Fifths[]): number[] {
   const rootMidi = BASE_MIDI + pitchClass(notes[0]!);
