@@ -200,6 +200,9 @@ export function ascendingMidis(notes: readonly Fifths[]): number[] {
     midis.push(m);
     prev = m;
   }
+  // If the root sits in the high half of the reference octave, drop the WHOLE
+  // voicing an octave (preserves intervals) so starting pitches don't run high.
+  if (notes.length > 0 && pitchClass(notes[0]!) >= 6) return midis.map((m) => m - 12);
   return midis;
 }
 
