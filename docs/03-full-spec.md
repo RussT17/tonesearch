@@ -36,7 +36,21 @@ enharmonics distinct. The one operation: **`note = root + interval`**.
 Sequences come from a **curated, data-driven bank of named musical patterns**,
 not arbitrary interval soup.
 
-- **v1 starter bank [default]:**
+> **v2 — leveled bank.** The bank is now partitioned across four difficulty tiers
+> (Easy ⊂ Medium ⊂ Hard ⊂ Expert). The full per-level pattern list, the ≤5-note
+> cap, the reduced-voicing name marker, and the Expert (off-root) set live in the
+> increment spec, [05-difficulty-and-bank.md](05-difficulty-and-bank.md) — the
+> authority for bank contents. Shape: **Easy** = consonant dyads (m2…M7) +
+> maj/min triads; **Medium** adds the tritone dyads, the remaining triads, and the
+> 4-note 6th/7th chords; **Hard** adds the far dyads and the extended/altered
+> chords as **full ≤5-note voicings** (adds, 6/9, 9/11/13, altered dominants);
+> **Expert** (build deferred, needs off-root support) adds inversions, rootless &
+> shell voicings, and the remaining jazz colors. Through Hard, **one voicing per
+> chord** (leaning full; a tone dropped only for a genuine clash). The rest of this
+> section describes the shared model; the v1 flat list below is the historical
+> baseline now folded into that structure.
+
+- **v1 starter bank [superseded → see 05]:**
   - *triads* — maj `[R,M3,P5]`, min `[R,m3,P5]`, dim `[R,m3,dim5]`, aug
     `[R,M3,aug5]`, sus4 `[R,P4,P5]`, sus2 `[R,M2,P5]`;
   - *sevenths* — maj7 `[R,M3,P5,M7]`, dom7 `[R,M3,P5,m7]`, min7 `[R,m3,P5,m7]`,
@@ -62,7 +76,8 @@ not arbitrary interval soup.
     by sus4), extended half-diminished (can't reduce to 4 notes cleanly), 6/9
     chords, all 5+ note voicings, and scales.
   - **Bank total: 41 patterns** (26 chords + 15 dyads); sequence length now ranges
-    2–4.
+    2–4. *(v1 baseline — superseded by the v2 leveled bank of ~45 across E/M/H;
+    see [05](05-difficulty-and-bank.md)/[06](06-difficulty-design.md) for counts.)*
 - **Order is meaningful [A5]:** the path must visit notes in the pattern's order.
 - **v1 labeling [F3]:** root-position, rooted only — every sequence starts on R.
 - **No duplicate tones [A6]:** patterns never produce two equal fifths values.
@@ -75,9 +90,16 @@ flats (e.g. C♭ lydian, A♯ phrygian). Roots may be **weighted toward the cent
 [param] so common keys appear more often. Any (pattern × root) yields valid
 spellings automatically, including double accidentals (C♭ min7 → C♭ E𝄫 G♭ B𝄫).
 
+> **v2 — per-level note range.** The fixed **[−12, +12]** bound below becomes the
+> per-level `noteRange` (Easy [−7,+7], Medium [−8,+8], Hard [−10,+10], Expert
+> [−12,+12]) — see [05](05-difficulty-and-bank.md). Every solution note (and every
+> decoy, §4) must stay within the active level's range; roots are constrained so
+> the whole solution fits. The decoy-window width stays **15** on all levels.
+
 **Root × pattern validity rule [default]:** a (root, pattern) pair is only used
-if **every** resulting note stays within **[E𝄫 (−12) … C𝄪 (+12)]** on the note
-line — i.e. no sequence note is pushed flatter than E𝄫 or sharper than C𝄪. This
+if **every** resulting note stays within the level's `noteRange` (v1 baseline:
+**[E𝄫 (−12) … C𝄪 (+12)]**) on the note line — i.e. no sequence note is pushed
+outside it. This
 dynamically narrows the usable roots per pattern (patterns that reach far in one
 direction admit fewer extreme roots), and it defines the outer bound for decoy
 fill (§4). **Intended consequence:** this systematically skews which chord×key
@@ -122,10 +144,12 @@ excluded combos are exactly the musically implausible triple-accidental ones.
       window always has slack to offset — the anti-cheat depends on `W > span(S)`.
    c. Valid window left-edges `L ∈ [maxS − W + 1, minS]`; **pick `L` uniformly at
       random** (non-centered placement falls out of this).
-   d. **Shift inward** if `[L, L+W−1]` extends past the plausible outer bounds
-      `[B_min, B_max] = [−12, +12]` (E𝄫 … C𝄪) — the same bound as the root×pattern
-      rule (§3) — so decoys never fall in double-accidental zones that could
-      never occur naturally. Near a bound, **randomize which side absorbs the
+   d. **Shift inward** if `[L, L+W−1]` extends past the level's `noteRange`
+      `[B_min, B_max]` (v1 baseline `[−12, +12]`, E𝄫 … C𝄪) — the same per-level
+      bound as the root×pattern rule (§3) — so decoys never fall outside the tier's
+      allowed notes. (At Easy the range is exactly `W`=15 wide, so the window fills
+      it with no offset room — acceptable; flagged for playtest.) Near a bound,
+      **randomize which side absorbs the
       clamp** so the window keeps offset freedom rather than collapsing to a
       near-centered (root-leaking) placement.
    e. Sample each decoy note from the window's fifths integers [param weighting];
@@ -186,10 +210,15 @@ Web Audio API, synthesized (no samples).
 ## 7. Visuals & UX — [F1 = v1 look]
 
 - **Aesthetic [R5]:** dark background, **neon purple** grid; calm, no timer.
-- **Layout:** top bar (difficulty label + **solved-this-session counter**);
+- **Layout:** top bar (difficulty selector + **solved-this-session counter**);
   center (the grid); below it (the target sequence as **puzzle-style diamonds**,
   e.g. `R m3 P5 m7`, highlighted incrementally with the same pink path line as the
   grid as the player selects — see §5).
+- **Sequence name [v2]:** each puzzle shows its pattern's human name (e.g.
+  "Dominant 7th", "Major third") near the target diamonds — **always visible but
+  subtle**, so a player who wants to name the chord themselves first can mentally
+  ignore it. Economy voicings carry a bracketed `[reduced]`-style marker (see
+  [05](05-difficulty-and-bank.md) §3 Names).
 - **45° grid orientation [default]:** the grid is displayed **rotated 45°** (a
   diamond lattice), matching the mockup. Grid *logic* stays in plain integer
   `(col, row)` space with orthogonal adjacency; the rotation is a **render-time
@@ -209,8 +238,9 @@ Web Audio API, synthesized (no samples).
   stays centered; tap targets ≥ 44 px.
 - **Entry [H5]:** drop straight into a puzzle (no menu wall); minimal title touch
   only.
-- **Settings [H4]:** a small corner control for mute (and difficulty once tiers
-  exist).
+- **Settings [H4]:** a small corner control for mute; the top-bar **difficulty
+  selector** (v2) lets the player pick the tier (tap-to-cycle; default Easy;
+  persisted — see §8).
 - **Glyph legibility [default]:** with **full-variety** difficulty, double
   accidentals (E𝄫, C𝄪, B𝄫, F𝄪) appear regularly in solutions *and* decoys — the
   widest, hardest glyphs. Confirm they render clearly inside a 45° diamond cell at
@@ -222,12 +252,27 @@ Web Audio API, synthesized (no samples).
   **spatial** path task on a rotated lattice — it is **not** meaningfully
   screen-reader-playable. Don't overstate SR support.
 
-## 8. Difficulty — [F1]
+## 8. Difficulty — [F1] · [v2: four tiers]
 
-v1 ships **one preset** ("Medium" [default]), but every difficulty-sensitive
-value is a **parameter**, so adding tiers later is just new parameter sets
-(no code change) [D2]. Parameters that a tier would set: grid cell count, pattern
-subset & weighting, root-pool width & weighting, decoy-window width.
+Four **player-selected** tiers, **default Easy**, the choice **persisted**
+(localStorage); the top-bar label is a **tap-to-cycle** control. Each tier is a
+**parameter set** — no code branching, just data (the v1 "all a parameter" design
+pays off here). A tier sets: the **bank subset** (which patterns, per
+[05](05-difficulty-and-bank.md)), the **grid cell-count minimum**, and the
+**`noteRange`** (allowed notes; §3/§4). The decoy-window width stays **15** on all
+tiers for now (playtest may split it later).
+
+| Tier | Grid ≥ | `noteRange` | Bank (cumulative) |
+|------|:---:|:---:|---|
+| **Easy** (default) | 10 | [−7, +7] (D♯…D♭) | consonant dyads m2…M7 + maj/min triads |
+| **Medium** | 14 | [−8, +8] (A♯…G♭) | + tritone dyads, dim/aug/sus triads, 6th/7th chords |
+| **Hard** | 18 | [−10, +10] (B♯…F♭) | + far dyads, extended/altered chords (full ≤5-note) |
+| **Expert** | 18 | [−12, +12] (E𝄫…C𝄪) | + inversions, rootless/shell voicings, jazz colors |
+
+**Build order:** Easy/Medium/Hard first (all root-position, so no model change);
+**Expert is a follow-up** — its voicings start off the root (inversions/rootless),
+which needs the deferred off-root support ([F3]) and revises "first tap = root"
+(§5). Full rationale and the Expert enumeration plan: [05](05-difficulty-and-bank.md).
 
 ## 9. Persistence & platform
 
@@ -242,27 +287,39 @@ subset & weighting, root-pool width & weighting, decoy-window width.
 chord bank, root-position, orthogonal grid, tap+solve audio, session counter,
 Give-Up-with-reveal.
 
-**Deferred to v2+ [F1]:** audio-only mode; off-root / rootless voicings; diagonal
-adjacency; multiple difficulty tiers & selector; hints; drag-to-trace input;
-particle effects; scales in the bank; streaks / personal-best scoring; **richer
-interval feedback** (labeling each path note with its interval / naming the key on
-solve — the interval-display idea parked from the Step-3 feedback review).
+**v2 (this increment) [see 05]:** the **Easy/Medium/Hard** tiers + selector, the
+**expanded/leveled bank**, and **sequence names**. All root-position — no model
+change.
+
+**Deferred to v2+ [F1]:** audio-only mode; **the Expert tier** and its off-root /
+rootless / inversion voicings (the big lift); diagonal adjacency; hints;
+drag-to-trace input; particle effects; scales in the bank; streaks / personal-best
+scoring; **richer interval feedback** (labeling each path note with its interval /
+naming the key on solve — the interval-display idea parked from the Step-3 feedback
+review).
 
 **Non-goals [I2]:** accounts, networking, monetization, teaching theory from
 scratch.
 
 ## 11. Tunable parameters (starting values — tune in Step 6)
 
+> **v2:** the ★ rows below are now **set per difficulty tier** (§8): `gridCellCount`
+> = 10/14/18/18, `noteRange` (replacing the fixed `plausibleBounds`) =
+> [−7,+7]/[−8,+8]/[−10,+10]/[−12,+12], and `patternWeights` scoped to each tier's
+> bank subset. `rootPool` is derived from `noteRange` (roots that keep the whole
+> solution in range). The starts below are the v1/Medium-ish baseline.
+
 | Param | Meaning | Start |
 |-------|---------|-------|
-| `gridCellCount` | target cell count (met or slightly exceeded — see §4) | 18 |
+| `gridCellCount` ★ | target cell count (met or slightly exceeded — see §4) | 18 |
 | `startGridDims` | bounded start grid W×H for 3×3 accretion (area ≥ target+margin) | 8×8 |
 | `gridMaxAspect` | aspect-ratio cap on the **rotated** on-screen footprint (portrait-friendly) | ~1.4 |
-| `patternWeights` | relative frequency of each bank pattern | uniform |
-| `rootPool` | allowed root range (fifths) | [−9, +9] |
+| `patternWeights` ★ | relative frequency of each bank pattern (per-tier subset) | uniform |
+| `rootPool` ★ | allowed root range (fifths); v2: derived from `noteRange` | [−9, +9] |
 | `rootCenterBias` | weighting toward central (common) roots | mild |
 | `decoyWindowWidth` (`W`) | width of the fifths window decoys sample from | 15 |
-| `plausibleBounds` | outer note-fifths clamp for decoys | [−12, +12] (E𝄫 … C𝄪) |
+| `noteRange` ★ | per-tier allowed notes; outer clamp for solution + decoys (was `plausibleBounds`) | [−12, +12] (E𝄫 … C𝄪) |
+| `difficulty` | selected tier (persisted); default Easy | Easy |
 | `voice` | oscillator type | triangle |
 | `attack` / `decay` | note envelope | 0.02 s / 0.6 s |
 | `tapOctave` | fixed reference octave for playback | ~C4 band |

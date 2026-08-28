@@ -21,7 +21,10 @@
 
 ## Chord/scale bank additions (from Full Spec §3)
 
-- **Scales** as sequences (not just chords).
+- **Scales** as sequences (not just chords). **Held** (2026-08-28) for two
+  reasons to solve first: (1) a 7-note sequence would force the target diamonds
+  to shrink; (2) unclear solve behavior — playing a whole scale as a simultaneous
+  chord sounds bad.
 - **Natural-11 dominant** (→ really a 9sus4).
 - **Extended half-diminished** chords (need >4 notes to keep defining tones).
 - **6/9 chords.**
