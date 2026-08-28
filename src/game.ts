@@ -202,6 +202,7 @@ export function startGame(root: HTMLElement): void {
   // Difficulty dropdown: reflect the loaded tier; on change, start a fresh puzzle.
   shell.difficultyEl.value = tier;
   shell.difficultyEl.onchange = (): void => {
+    shell.difficultyEl.blur(); // drop focus so the pill doesn't stay highlighted
     if (phase !== 'playing') {
       shell.difficultyEl.value = tier; // ignore changes mid-solve/reveal; keep in sync
       return;
