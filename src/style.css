@@ -27,6 +27,7 @@ body {
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-user-select: none;
   user-select: none;
+  -webkit-touch-callout: none; /* no long-press callout swallowing the tap */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
@@ -219,13 +220,6 @@ body {
   0% { box-shadow: 0 0 8px var(--neon-dim); }
   50% { box-shadow: 0 0 26px var(--neon-bright); }
   100% { box-shadow: 0 0 20px var(--neon-bright); }
-}
-/* the sequence's starting note: a steady bright near-white anchor (solve/reveal) */
-.solved .cell.start {
-  animation: none;
-  border-color: #f2e9ff;
-  background: rgba(242, 233, 255, 0.34);
-  box-shadow: 0 0 24px #e0aaff, inset 0 0 14px #ffffff;
 }
 
 /* --- start gate (unlocks audio on the first tap) --- */
