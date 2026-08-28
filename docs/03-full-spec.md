@@ -53,10 +53,16 @@ not arbitrary interval soup.
     - *major* — maj9 `[R,M3,M7,M2]`, maj7♯11 `[R,M3,M7,aug4]`, maj13
       `[R,M3,M7,M6]`;
     - *minor* — min9 `[R,m3,m7,M2]`, min11 `[R,m3,m7,P4]`, min13 `[R,m3,m7,M6]`.
-  - Everything stays ≤ 4 notes. Deliberately omitted (easy to add later): a
+  - *two-note interval dyads* `[R, X]` — one for **every interval X except R,
+    dimR, augR, dim4**, i.e. m2, M2, m3, M3, P4, aug4, dim5, P5, aug5, m6, M6, m7,
+    M7, dim7, aug2 (15 of them). Drill each interval on its own. (R excluded since
+    `[R,R]` would be two identical notes, violating "no duplicate tones".)
+  - Chords stay ≤ 4 notes. Deliberately omitted (easy to add later): a
     natural-11 dominant (♮11 clashes with M3 → becomes 9sus4; P4 already covered
     by sus4), extended half-diminished (can't reduce to 4 notes cleanly), 6/9
     chords, all 5+ note voicings, and scales.
+  - **Bank total: 41 patterns** (26 chords + 15 dyads); sequence length now ranges
+    2–4.
 - **Order is meaningful [A5]:** the path must visit notes in the pattern's order.
 - **v1 labeling [F3]:** root-position, rooted only — every sequence starts on R.
 - **No duplicate tones [A6]:** patterns never produce two equal fifths values.

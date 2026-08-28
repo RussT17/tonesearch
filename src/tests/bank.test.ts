@@ -3,9 +3,9 @@ import { BANK } from '../bank';
 import { intervalName } from '../theory';
 
 describe('bank integrity', () => {
-  it('has 26 patterns with unique names', () => {
-    expect(BANK.length).toBe(26);
-    expect(new Set(BANK.map((p) => p.name)).size).toBe(26);
+  it('has 41 patterns with unique names', () => {
+    expect(BANK.length).toBe(41); // 26 chords + 15 two-note interval dyads
+    expect(new Set(BANK.map((p) => p.name)).size).toBe(41);
   });
 
   it('every pattern starts on R and has no duplicate tones (root-position)', () => {
