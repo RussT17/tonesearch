@@ -156,10 +156,12 @@ export function startGame(root: HTMLElement): void {
     // Play the player's OWN selected notes (their root, which may differ from the
     // generator's) so the chord matches the arpeggio they just heard.
     const selectedNotes = selection.map((id) => noteOf.get(id)!);
-    audio.playChord(selectedNotes, 0.4); // chord only, well after the final tap note
+    // Match the give-up gap between the final note and the chord: reveal waits one
+    // arpeggio step (520ms) + 170ms after the last note ≈ 690ms.
+    audio.playChord(selectedNotes, 0.69);
     solved += 1;
     shell.counterEl.textContent = `Solved: ${solved}`;
-    setTimeout(nextPuzzle, 1150);
+    setTimeout(nextPuzzle, 1450); // later chord → hold a bit longer before advancing
   }
 
   function reveal(): void {
