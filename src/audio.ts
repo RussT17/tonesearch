@@ -57,7 +57,11 @@ function startKeepAlive(c: AudioContext): void {
   osc.type = 'sine';
   osc.frequency.value = Math.min(20000, c.sampleRate / 2 - 1000); // near-ultrasonic, inaudible
   const gain = c.createGain();
-  gain.gain.value = 0.0008; // ~-62 dBFS: non-zero energy, but inaudible
+  const t0 = c.currentTime;
+  // Assertive (but still ultrasonic/inaudible) burst to spin the Bluetooth
+  // stream up fast on the Play gesture, then settle to the quiet steady level.
+  gain.gain.setValueAtTime(0.02, t0); // ~-34 dBFS at 20kHz
+  gain.gain.setTargetAtTime(0.0008, t0 + 0.3, 0.15); // → ~-62 dBFS steady
   osc.connect(gain).connect(c.destination);
   osc.start();
   keepAlive = { osc, gain };
