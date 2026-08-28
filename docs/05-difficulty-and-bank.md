@@ -202,6 +202,12 @@ Each pattern carries a display `name` (dyads → interval names like "Minor thir
 chords → "Dominant 7th", "Half-diminished"). Shown **always, subtly** near the
 tokens. Concise form. (Alt-voicing naming decided with the Expert build.)
 
+**Category word.** Each pattern also has a `kind` — `interval` / `triad` / `chord`
+— and the caption appends the word: "Major **Triad**", "Dominant 7th **Chord**",
+"Minor 3rd **Interval**". "Triad" is reserved for the four classic triads
+(maj, min, dim, aug); **sus2/sus4 read as "Chord"**, as does everything ≥4 notes.
+Order: `{name} {Category} [reduced]`.
+
 **Reduced-voicing marker.** A voicing's name gets a bracketed marker (e.g.
 `Dom13 [reduced]`) when it omits one or more tones of the chord its **name implies
 at full extension** — *except* tones dropped to avoid a genuine clash, which are

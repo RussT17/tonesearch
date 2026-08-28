@@ -24,6 +24,16 @@ describe('bank integrity', () => {
     expect(reduced).toEqual(new Set(['dom13', 'maj13', 'min13', 'min11']));
   });
 
+  it('categorizes: 2-note = interval, only {maj,min,dim,aug} = triad, rest = chord', () => {
+    const triads = new Set(BANK.filter((p) => p.kind === 'triad').map((p) => p.name));
+    expect(triads).toEqual(new Set(['maj', 'min', 'dim', 'aug'])); // the four biggies; sus are chords
+    for (const p of BANK) {
+      if (p.intervals.length === 2) expect(p.kind).toBe('interval');
+      else if (triads.has(p.name)) expect(p.kind).toBe('triad');
+      else expect(p.kind).toBe('chord');
+    }
+  });
+
   it('bankForTier is cumulative with expected counts (12 / 25 / 45)', () => {
     const counts: Record<Tier, number> = { easy: 12, medium: 25, hard: 45 };
     for (const tier of ['easy', 'medium', 'hard'] as Tier[]) {

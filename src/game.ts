@@ -3,7 +3,7 @@
 
 import { generatePuzzle, isPrefix, type Puzzle } from './generate';
 import { configFor } from './config';
-import { bankForTier, type Pattern, type Tier } from './bank';
+import { bankForTier, categoryLabel, type Pattern, type Tier } from './bank';
 import {
   mountShell,
   renderGrid,
@@ -34,8 +34,9 @@ function loadTier(): Tier {
   return 'easy'; // default
 }
 
-/** The pattern's caption, with the '[reduced]' marker on economy voicings. */
-const patternName = (p: Pattern): string => p.display + (p.reduced ? ' [reduced]' : '');
+/** The caption: name + category word (Interval/Triad/Chord), then any marker. */
+const patternName = (p: Pattern): string =>
+  `${p.display} ${categoryLabel(p.kind)}${p.reduced ? ' [reduced]' : ''}`;
 
 /** The voiced (ascending, root-seated) MIDI of the last note in `notes`. */
 const lastVoiced = (notes: number[]): number => {
