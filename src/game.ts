@@ -2,7 +2,8 @@
 // render → solve flow (docs/03-full-spec.md §5, §7).
 
 import { generatePuzzle, isPrefix, type Puzzle } from './generate';
-import { DEFAULT_CONFIG } from './config';
+import { configFor } from './config';
+import { bankForTier, type Pattern, type Tier } from './bank';
 import {
   mountShell,
   renderGrid,
@@ -19,6 +20,24 @@ import * as audio from './audio';
 
 type Phase = 'playing' | 'busy';
 
+const TIER_KEY = 'tonesearch.difficulty';
+const TIER_ORDER: Tier[] = ['easy', 'medium', 'hard'];
+
+function loadTier(): Tier {
+  try {
+    const t = localStorage.getItem(TIER_KEY);
+    if (t === 'easy' || t === 'medium' || t === 'hard') return t;
+  } catch {
+    /* storage may be unavailable */
+  }
+  return 'easy'; // default
+}
+
+const tierLabel = (t: Tier): string => t.charAt(0).toUpperCase() + t.slice(1);
+
+/** The pattern's caption, with the '[reduced]' marker on economy voicings. */
+const patternName = (p: Pattern): string => p.display + (p.reduced ? ' [reduced]' : '');
+
 /** The voiced (ascending, root-seated) MIDI of the last note in `notes`. */
 const lastVoiced = (notes: number[]): number => {
   const v = audio.ascendingMidis(notes);
@@ -34,6 +53,7 @@ export function startGame(root: HTMLElement): void {
   let selection: number[] = [];
   let solved = 0;
   let phase: Phase = 'playing';
+  let tier: Tier = loadTier();
   let coordOf = new Map<number, { col: number; row: number }>();
   let noteOf = new Map<number, number>();
 
@@ -96,10 +116,11 @@ export function startGame(root: HTMLElement): void {
   };
 
   const newPuzzle = (): void => {
-    puzzle = generatePuzzle(DEFAULT_CONFIG, Math.floor(Math.random() * 1e9));
+    puzzle = generatePuzzle(configFor(tier), bankForTier(tier), Math.floor(Math.random() * 1e9));
     selection = [];
     coordOf = new Map(puzzle.cells.map((c) => [c.id, { col: c.col, row: c.row }]));
     noteOf = new Map(puzzle.cells.map((c) => [c.id, c.note]));
+    shell.nameEl.textContent = patternName(puzzle.pattern);
     layout();
     if (import.meta.env.DEV) (window as unknown as { __solution: number[] }).__solution = puzzle.solutionPath;
   };
@@ -178,6 +199,21 @@ export function startGame(root: HTMLElement): void {
   }
 
   shell.giveUpBtn.onclick = reveal;
+
+  // Difficulty: reflect the loaded tier, and tap-to-cycle easy→medium→hard→easy.
+  shell.difficultyEl.textContent = tierLabel(tier);
+  shell.difficultyEl.onclick = (): void => {
+    if (phase !== 'playing') return; // ignore taps mid-solve/reveal
+    tier = TIER_ORDER[(TIER_ORDER.indexOf(tier) + 1) % TIER_ORDER.length]!;
+    try {
+      localStorage.setItem(TIER_KEY, tier);
+    } catch {
+      /* storage may be unavailable */
+    }
+    shell.difficultyEl.textContent = tierLabel(tier);
+    newPuzzle(); // fresh puzzle in the new tier
+  };
+
   const paintMute = (m: boolean): void => {
     shell.muteBtn.textContent = m ? '🔇' : '🔊';
     shell.muteBtn.setAttribute('aria-label', m ? 'Unmute' : 'Mute');

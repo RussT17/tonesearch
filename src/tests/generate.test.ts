@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { generatePuzzle, validRoots, isSolution, isPrefix, type Puzzle } from '../generate';
-import { DEFAULT_CONFIG } from '../config';
-import { BANK } from '../bank';
+import { configFor } from '../config';
+import { bankForTier, type Tier } from '../bank';
 import { footprint, aspect } from '../geometry';
 
-const cfg = DEFAULT_CONFIG;
-const SEEDS = Array.from({ length: 300 }, (_, i) => i);
+const TIERS: Tier[] = ['easy', 'medium', 'hard'];
+const SEEDS = Array.from({ length: 150 }, (_, i) => i);
 
 function cellById(p: Puzzle, id: number) {
   return p.cells.find((c) => c.id === id)!;
@@ -31,55 +31,67 @@ function isConnected(p: Puzzle): boolean {
 }
 
 describe('validRoots', () => {
-  it('is non-empty for every bank pattern (the generation hang guard)', () => {
-    for (const p of BANK) expect(validRoots(p, cfg).length).toBeGreaterThan(0);
+  it('is non-empty for every pattern within its tier (the generation hang guard)', () => {
+    for (const tier of TIERS) {
+      const cfg = configFor(tier);
+      for (const p of bankForTier(tier)) {
+        expect(validRoots(p, cfg).length).toBeGreaterThan(0);
+      }
+    }
   });
 });
 
-describe('generatePuzzle invariants (over many seeds)', () => {
+describe('generatePuzzle invariants (every tier, many seeds)', () => {
   it('holds all structural invariants', () => {
-    for (const seed of SEEDS) {
-      const p = generatePuzzle(cfg, seed);
-      const len = p.pattern.intervals.length;
+    for (const tier of TIERS) {
+      const cfg = configFor(tier);
+      const patterns = bankForTier(tier);
+      const [lo, hi] = cfg.noteRange;
+      for (const seed of SEEDS) {
+        const p = generatePuzzle(cfg, patterns, seed);
+        const len = p.pattern.intervals.length;
 
-      // solution path shape
-      expect(p.solutionPath.length).toBe(len);
-      expect(new Set(p.solutionPath).size).toBe(len); // distinct cells
-      const pathCells = p.solutionPath.map((id) => cellById(p, id));
-      for (let i = 1; i < pathCells.length; i++) {
-        const a = pathCells[i - 1]!;
-        const b = pathCells[i]!;
-        expect(Math.abs(a.col - b.col) + Math.abs(a.row - b.row)).toBe(1); // orthogonal adjacency
+        // solution path shape
+        expect(p.solutionPath.length).toBe(len);
+        expect(new Set(p.solutionPath).size).toBe(len); // distinct cells
+        const pathCells = p.solutionPath.map((id) => cellById(p, id));
+        for (let i = 1; i < pathCells.length; i++) {
+          const a = pathCells[i - 1]!;
+          const b = pathCells[i]!;
+          expect(Math.abs(a.col - b.col) + Math.abs(a.row - b.row)).toBe(1); // orthogonal
+        }
+
+        // path notes equal root + intervals
+        expect(pathCells.map((c) => c.note)).toEqual(p.solutionNotes);
+        expect(p.solutionNotes).toEqual(p.pattern.intervals.map((iv) => p.root + iv));
+
+        // it actually solves, root-agnostically
+        expect(isSolution(pathCells.map((c) => c.note), p.pattern)).toBe(true);
+
+        // every note (solution + decoy) within the tier's noteRange
+        for (const c of p.cells) {
+          expect(c.note).toBeGreaterThanOrEqual(lo);
+          expect(c.note).toBeLessThanOrEqual(hi);
+        }
+
+        // grid: connected, met-or-exceeded target, aspect within cap
+        expect(isConnected(p)).toBe(true);
+        expect(p.cells.length).toBeGreaterThanOrEqual(cfg.gridCellCount);
+        expect(aspect(footprint(p.cells))).toBeLessThanOrEqual(cfg.gridMaxAspect);
       }
-
-      // path notes equal root + intervals
-      expect(pathCells.map((c) => c.note)).toEqual(p.solutionNotes);
-      expect(p.solutionNotes).toEqual(p.pattern.intervals.map((iv) => p.root + iv));
-
-      // it actually solves, root-agnostically
-      expect(isSolution(pathCells.map((c) => c.note), p.pattern)).toBe(true);
-
-      // every note within the plausible bounds
-      for (const c of p.cells) {
-        expect(c.note).toBeGreaterThanOrEqual(-12);
-        expect(c.note).toBeLessThanOrEqual(12);
-      }
-
-      // grid: connected, met-or-exceeded target, aspect within cap
-      expect(isConnected(p)).toBe(true);
-      expect(p.cells.length).toBeGreaterThanOrEqual(cfg.gridCellCount);
-      expect(aspect(footprint(p.cells))).toBeLessThanOrEqual(cfg.gridMaxAspect);
     }
   });
 
   it('is deterministic: same seed ⇒ identical puzzle', () => {
-    expect(generatePuzzle(cfg, 12345)).toEqual(generatePuzzle(cfg, 12345));
+    const cfg = configFor('hard');
+    const patterns = bankForTier('hard');
+    expect(generatePuzzle(cfg, patterns, 12345)).toEqual(generatePuzzle(cfg, patterns, 12345));
   });
 });
 
 describe('isPrefix (per-step validation)', () => {
   it('accepts every growing prefix of a solution, rejects wrong continuations', () => {
-    const p = generatePuzzle(cfg, 2);
+    const p = generatePuzzle(configFor('hard'), bankForTier('hard'), 2);
     const notes = p.solutionNotes;
     for (let k = 0; k <= notes.length; k++) {
       expect(isPrefix(notes.slice(0, k), p.pattern)).toBe(true);
@@ -93,7 +105,7 @@ describe('isPrefix (per-step validation)', () => {
 
 describe('isSolution (root-agnostic acceptance)', () => {
   it('accepts an alternate-root realization, rejects wrong intervals', () => {
-    const p = generatePuzzle(cfg, 1);
+    const p = generatePuzzle(configFor('hard'), bankForTier('hard'), 1);
     const correct = p.solutionNotes;
     // shift every note by +4 fifths → a different root, same interval shape
     expect(isSolution(correct.map((n) => n + 4), p.pattern)).toBe(true);

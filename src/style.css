@@ -52,6 +52,22 @@ body {
 }
 .topbar .difficulty {
   text-transform: uppercase;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  background: none;
+  border: 1px solid var(--neon-dim);
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.topbar .difficulty:hover {
+  color: var(--text);
+  border-color: var(--neon-mute);
+}
+.topbar .difficulty:active {
+  background: var(--neon-dim);
 }
 .topbar .counter {
   font-variant-numeric: tabular-nums;
@@ -155,6 +171,17 @@ body {
 }
 .token-diamond {
   cursor: default; /* target diamonds share .cell's look but aren't tappable */
+}
+/* subtle, always-visible chord/interval name — easy to ignore if you want to
+   name it yourself first (docs/05 §Names). */
+.seq-name {
+  text-align: center;
+  margin-top: 0.9rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  opacity: 0.7;
+  min-height: 1em; /* reserve space so the row doesn't jump between puzzles */
 }
 
 /* --- controls (utility chrome: hollow, muted) --- */

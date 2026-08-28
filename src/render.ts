@@ -10,11 +10,12 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 const CELL_FILL = 0.9; // diamond side vs. edge-touching size (leaves a thin gap)
 
 export interface Shell {
-  difficultyEl: HTMLElement;
+  difficultyEl: HTMLButtonElement;
   counterEl: HTMLElement;
   stageEl: HTMLElement;
   gridEl: HTMLElement;
   tokensEl: HTMLElement;
+  nameEl: HTMLElement;
   giveUpBtn: HTMLButtonElement;
   muteBtn: HTMLButtonElement;
 }
@@ -30,7 +31,8 @@ export function mountShell(root: HTMLElement): Shell {
   };
 
   const topbar = el('div', 'topbar');
-  const difficultyEl = el('span', 'difficulty', 'Medium');
+  const difficultyEl = el<HTMLButtonElement>('button', 'difficulty', 'Easy');
+  difficultyEl.setAttribute('aria-label', 'Difficulty — tap to change');
   const counterEl = el('span', 'counter', 'Solved: 0');
   topbar.append(difficultyEl, counterEl);
 
@@ -40,8 +42,9 @@ export function mountShell(root: HTMLElement): Shell {
 
   const tokensLabel = el('div', 'tokens-label', 'Find this sequence');
   const tokensEl = el('div', 'tokens');
+  const nameEl = el('div', 'seq-name'); // subtle chord/interval name (always visible)
   const tokensBand = el('div', 'tokens-band');
-  tokensBand.append(tokensLabel, tokensEl);
+  tokensBand.append(tokensLabel, tokensEl, nameEl);
 
   const controls = el('div', 'controls');
   const giveUpBtn = el<HTMLButtonElement>('button', 'giveup', 'Give Up');
@@ -53,7 +56,7 @@ export function mountShell(root: HTMLElement): Shell {
   tokensEl.setAttribute('aria-label', 'Target intervals');
 
   root.append(topbar, stageEl, tokensBand, controls);
-  return { difficultyEl, counterEl, stageEl, gridEl, tokensEl, giveUpBtn, muteBtn };
+  return { difficultyEl, counterEl, stageEl, gridEl, tokensEl, nameEl, giveUpBtn, muteBtn };
 }
 
 /** References to the rendered grid, so input/game can drive it. */

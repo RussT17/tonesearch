@@ -4,7 +4,6 @@
 
 import type { Fifths } from './theory';
 import type { Pattern } from './bank';
-import { BANK } from './bank';
 import type { Config } from './config';
 import { footprint, aspect } from './geometry';
 import { makeRng, randInt, pick, weightedPick, type Rng } from './rng';
@@ -57,10 +56,10 @@ export function isPrefix(selectedNotes: readonly Fifths[], pattern: Pattern): bo
   return selectedNotes.every((n, i) => n - iv[i]! === base);
 }
 
-/** Roots in the pool for which every resulting note stays within plausibleBounds. */
+/** Roots in the pool for which every resulting note stays within noteRange. */
 export function validRoots(pattern: Pattern, cfg: Config): Fifths[] {
   const [lo, hi] = cfg.rootPool;
-  const [b0, b1] = cfg.plausibleBounds;
+  const [b0, b1] = cfg.noteRange;
   const roots: Fifths[] = [];
   for (let r = lo; r <= hi; r++) {
     if (pattern.intervals.every((iv) => r + iv >= b0 && r + iv <= b1)) roots.push(r);
@@ -151,7 +150,7 @@ function fillDecoys(notes: Fifths[], n: number, cfg: Config, rng: Rng): Fifths[]
   const maxS = Math.max(...notes);
   const span = maxS - minS + 1;
   const W = Math.max(cfg.decoyWindowWidth, span);
-  const [b0, b1] = cfg.plausibleBounds;
+  const [b0, b1] = cfg.noteRange;
   // L must keep the window containing the notes AND within plausible bounds.
   const loL = Math.max(maxS - W + 1, b0);
   const hiL = Math.min(minS, b1 - W + 1);
@@ -160,11 +159,11 @@ function fillDecoys(notes: Fifths[], n: number, cfg: Config, rng: Rng): Fifths[]
   return Array.from({ length: n }, () => pick(rng, window));
 }
 
-/** Generate one puzzle. Deterministic given `seed`. */
-export function generatePuzzle(cfg: Config, seed: number): Puzzle {
+/** Generate one puzzle from the given pattern set. Deterministic given `seed`. */
+export function generatePuzzle(cfg: Config, patterns: readonly Pattern[], seed: number): Puzzle {
   const rng = makeRng(seed);
 
-  const pattern = weightedPick(rng, BANK, (p) => cfg.patternWeights?.[p.name] ?? 1);
+  const pattern = weightedPick(rng, patterns, (p) => cfg.patternWeights?.[p.name] ?? 1);
   const roots = validRoots(pattern, cfg);
   if (roots.length === 0) throw new Error(`No valid roots for pattern ${pattern.name}`);
   const root = weightedPick(rng, roots, (r) => Math.exp(-cfg.rootCenterBias * Math.abs(r)));
