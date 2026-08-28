@@ -105,8 +105,9 @@ Minimal, all mechanical:
   emphasis (small, muted color, e.g. `--neon-mute` at reduced opacity) so it's
   easy to ignore — [05 §Names], [03 §7]. Update it in `renderTokens` (it already
   gets the puzzle) or a sibling `setName(pattern)`.
-- **Selector:** the top-bar difficulty label becomes a `<button>` that calls
-  `cycleTier` on tap; shows the current tier (e.g. "EASY"). Tap-to-cycle, no menu.
+- **Selector:** the top-bar difficulty control is a `<select>` dropdown (options
+  Easy/Medium/Hard); `onchange` sets the tier and starts a fresh puzzle. Its
+  `.value` reflects the loaded tier on init. *(Chosen over tap-to-cycle.)*
 
 ### `style.css`
 - `.seq-name` caption (subtle) and `.difficulty` button affordance (looks tappable

@@ -239,7 +239,7 @@ Web Audio API, synthesized (no samples).
 - **Entry [H5]:** drop straight into a puzzle (no menu wall); minimal title touch
   only.
 - **Settings [H4]:** a small corner control for mute; the top-bar **difficulty
-  selector** (v2) lets the player pick the tier (tap-to-cycle; default Easy;
+  selector** (v2) lets the player pick the tier (a dropdown; default Easy;
   persisted — see §8).
 - **Glyph legibility [default]:** with **full-variety** difficulty, double
   accidentals (E𝄫, C𝄪, B𝄫, F𝄪) appear regularly in solutions *and* decoys — the
@@ -255,7 +255,7 @@ Web Audio API, synthesized (no samples).
 ## 8. Difficulty — [F1] · [v2: four tiers]
 
 Four **player-selected** tiers, **default Easy**, the choice **persisted**
-(localStorage); the top-bar label is a **tap-to-cycle** control. Each tier is a
+(localStorage); the top-bar control is a **dropdown** selector. Each tier is a
 **parameter set** — no code branching, just data (the v1 "all a parameter" design
 pays off here). A tier sets: the **bank subset** (which patterns, per
 [05](05-difficulty-and-bank.md)), the **grid cell-count minimum**, and the

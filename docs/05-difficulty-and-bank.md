@@ -195,7 +195,7 @@ noteRange, register? }`. Concrete values:
   Root selection is constrained so all solution notes fit (U6).
 - **`gridCellCountMin`** — the accretion target (already meets-or-exceeds).
 - **Selection [U7]:** player-selected, default Easy, persisted (localStorage); the
-  top-bar difficulty label becomes a tap-to-cycle control.
+  top-bar difficulty selector is a dropdown.
 
 ### Names [U5]
 Each pattern carries a display `name` (dyads → interval names like "Minor third";

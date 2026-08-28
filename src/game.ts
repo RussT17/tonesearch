@@ -21,19 +21,18 @@ import * as audio from './audio';
 type Phase = 'playing' | 'busy';
 
 const TIER_KEY = 'tonesearch.difficulty';
-const TIER_ORDER: Tier[] = ['easy', 'medium', 'hard'];
+
+const isTier = (t: string): t is Tier => t === 'easy' || t === 'medium' || t === 'hard';
 
 function loadTier(): Tier {
   try {
     const t = localStorage.getItem(TIER_KEY);
-    if (t === 'easy' || t === 'medium' || t === 'hard') return t;
+    if (t !== null && isTier(t)) return t;
   } catch {
     /* storage may be unavailable */
   }
   return 'easy'; // default
 }
-
-const tierLabel = (t: Tier): string => t.charAt(0).toUpperCase() + t.slice(1);
 
 /** The pattern's caption, with the '[reduced]' marker on economy voicings. */
 const patternName = (p: Pattern): string => p.display + (p.reduced ? ' [reduced]' : '');
@@ -200,17 +199,20 @@ export function startGame(root: HTMLElement): void {
 
   shell.giveUpBtn.onclick = reveal;
 
-  // Difficulty: reflect the loaded tier, and tap-to-cycle easy→medium→hard→easy.
-  shell.difficultyEl.textContent = tierLabel(tier);
-  shell.difficultyEl.onclick = (): void => {
-    if (phase !== 'playing') return; // ignore taps mid-solve/reveal
-    tier = TIER_ORDER[(TIER_ORDER.indexOf(tier) + 1) % TIER_ORDER.length]!;
+  // Difficulty dropdown: reflect the loaded tier; on change, start a fresh puzzle.
+  shell.difficultyEl.value = tier;
+  shell.difficultyEl.onchange = (): void => {
+    if (phase !== 'playing') {
+      shell.difficultyEl.value = tier; // ignore changes mid-solve/reveal; keep in sync
+      return;
+    }
+    const v = shell.difficultyEl.value;
+    if (isTier(v)) tier = v;
     try {
       localStorage.setItem(TIER_KEY, tier);
     } catch {
       /* storage may be unavailable */
     }
-    shell.difficultyEl.textContent = tierLabel(tier);
     newPuzzle(); // fresh puzzle in the new tier
   };
 

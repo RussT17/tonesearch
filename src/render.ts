@@ -10,7 +10,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 const CELL_FILL = 0.9; // diamond side vs. edge-touching size (leaves a thin gap)
 
 export interface Shell {
-  difficultyEl: HTMLButtonElement;
+  difficultyEl: HTMLSelectElement;
   counterEl: HTMLElement;
   stageEl: HTMLElement;
   gridEl: HTMLElement;
@@ -31,8 +31,14 @@ export function mountShell(root: HTMLElement): Shell {
   };
 
   const topbar = el('div', 'topbar');
-  const difficultyEl = el<HTMLButtonElement>('button', 'difficulty', 'Easy');
-  difficultyEl.setAttribute('aria-label', 'Difficulty — tap to change');
+  const difficultyEl = el<HTMLSelectElement>('select', 'difficulty');
+  difficultyEl.setAttribute('aria-label', 'Difficulty');
+  for (const [value, label] of [['easy', 'Easy'], ['medium', 'Medium'], ['hard', 'Hard']] as const) {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = label;
+    difficultyEl.append(opt);
+  }
   const counterEl = el('span', 'counter', 'Solved: 0');
   topbar.append(difficultyEl, counterEl);
 
