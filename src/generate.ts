@@ -163,7 +163,10 @@ function fillDecoys(notes: Fifths[], n: number, cfg: Config, rng: Rng): Fifths[]
 export function generatePuzzle(cfg: Config, patterns: readonly Pattern[], seed: number): Puzzle {
   const rng = makeRng(seed);
 
-  const pattern = weightedPick(rng, patterns, (p) => cfg.patternWeights?.[p.name] ?? 1);
+  const pattern = weightedPick(rng, patterns, (p) => {
+    const kindW = p.kind === 'interval' ? cfg.dyadWeight : 1;
+    return kindW * (cfg.patternWeights?.[p.name] ?? 1);
+  });
   const roots = validRoots(pattern, cfg);
   if (roots.length === 0) throw new Error(`No valid roots for pattern ${pattern.name}`);
   const root = weightedPick(rng, roots, (r) => Math.exp(-cfg.rootCenterBias * Math.abs(r)));

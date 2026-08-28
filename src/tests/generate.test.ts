@@ -82,6 +82,21 @@ describe('generatePuzzle invariants (every tier, many seeds)', () => {
     }
   });
 
+  it('Easy yields ≈3 dyads per 2 triads (dyadWeight calibration)', () => {
+    const cfg = configFor('easy');
+    const patterns = bankForTier('easy'); // 10 dyads + 2 triads (maj, min)
+    let dyads = 0;
+    let triads = 0;
+    for (let seed = 0; seed < 3000; seed++) {
+      const p = generatePuzzle(cfg, patterns, seed);
+      if (p.pattern.kind === 'interval') dyads++;
+      else triads++;
+    }
+    const ratio = dyads / triads; // target 1.5 (3:2)
+    expect(ratio).toBeGreaterThan(1.35);
+    expect(ratio).toBeLessThan(1.65);
+  });
+
   it('is deterministic: same seed ⇒ identical puzzle', () => {
     const cfg = configFor('hard');
     const patterns = bankForTier('hard');
