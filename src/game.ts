@@ -68,24 +68,22 @@ export function startGame(root: HTMLElement): void {
 
   const wireCells = (): void => {
     view.cellEls.forEach((el, id) => {
-      // Sound on press. ANY unselected tap is voiced as the candidate NEXT note
-      // (ascending above the last selected) — right or wrong — so the user can
-      // hear how it would sound in position. Re-tapping a selected cell replays
-      // its own pitch in context.
+      // Sound AND action on press (immediate; also robust to press-and-hold).
+      // A clickable tap is voiced as the candidate NEXT note (ascending), right
+      // or wrong; a re-tap of a selected cell blips; non-adjacent is inert.
       el.onpointerdown = () => {
         if (phase !== 'playing') return;
         if (selection.includes(id)) {
-          audio.playCancel(); // re-tapping a selected note rewinds → deselect blip
-          return;
+          audio.playCancel(); // re-tap → rewind (deselect blip)
+        } else {
+          const last = selection[selection.length - 1];
+          const clickable = selection.length === 0 || (last !== undefined && adjacent(last, id));
+          if (clickable) {
+            audio.playNoteMidi(ascendMidi(noteOf.get(id)!, selectionMidis[selectionMidis.length - 1]));
+          } // non-adjacent → no sound
         }
-        const last = selection[selection.length - 1];
-        const clickable = selection.length === 0 || (last !== undefined && adjacent(last, id));
-        if (!clickable) return; // non-adjacent → fully inert (no sound)
-        audio.playNoteMidi(ascendMidi(noteOf.get(id)!, selectionMidis[selectionMidis.length - 1]));
+        onTap(id);
       };
-      // Selection on pointerup (fires on release even after a long hold, unlike
-      // click which a long-press can swallow).
-      el.onpointerup = () => onTap(id);
     });
   };
 
@@ -160,7 +158,7 @@ export function startGame(root: HTMLElement): void {
 
     // Reveal the path one note at a time, arpeggiated (rising) and in order —
     // which also makes the starting note obvious (it appears first).
-    const stepMs = 260;
+    const stepMs = 520; // half speed — easier to follow
     path.forEach((id, i) => {
       setTimeout(() => {
         selection = path.slice(0, i + 1);
@@ -172,7 +170,7 @@ export function startGame(root: HTMLElement): void {
     });
     const arped = path.length * stepMs;
     setTimeout(() => audio.playChord(puzzle.solutionNotes, 0.05), arped + 120); // then the chord
-    setTimeout(nextPuzzle, arped + 1500); // advance (no increment)
+    setTimeout(nextPuzzle, arped + 4500); // ~3s extra pause to take it all in, then advance
   }
 
   function nextPuzzle(): void {

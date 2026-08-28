@@ -213,7 +213,7 @@ body {
 }
 .solved .cell.selected {
   animation: solvePulse 0.7s ease;
-  background: rgba(224, 170, 255, 0.4);
+  background: rgba(199, 125, 255, 0.3); /* keep letters readable; glow does the "lit" work */
   box-shadow: 0 0 20px var(--neon-bright), inset 0 0 12px var(--neon-dim);
 }
 @keyframes solvePulse {
