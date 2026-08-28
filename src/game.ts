@@ -195,9 +195,11 @@ export function startGame(root: HTMLElement): void {
     if (phase === 'playing') layout();
   });
 
-  // Resume audio when returning from background (mobile suspends it there).
+  // Stop the keep-alive in the background (let Bluetooth idle → save battery);
+  // resume + restart it on return.
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) audio.unlock();
+    if (document.hidden) audio.stopKeepAlive();
+    else audio.unlock();
   });
 
   newPuzzle();

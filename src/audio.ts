@@ -1,9 +1,9 @@
 // audio.ts — Web Audio synthesis. Tap tones and solve playback. One shared
-// AudioContext, resumed on a user gesture. Notes are scheduled only once the
-// context is actually running: mobile starts it suspended with a frozen clock,
-// so scheduling then would queue every note at one past time and fire them all
-// at once on resume. (First-note latency over Bluetooth is the A2DP link's
-// cold-start — a platform cost we accept rather than chase.)
+// AudioContext, resumed on a user gesture. Two defenses against mobile/Bluetooth
+// audio going to sleep between taps (which causes cold-start lag and the "all
+// notes at once" burst): ① a keep-alive (inaudible non-zero tone) that keeps the
+// Bluetooth link + audio clock awake during play, and ② a burst guard that drops
+// a note rather than queueing it when it detects the clock has frozen.
 
 import { pitchClass } from './theory';
 import type { Fifths } from './theory';
@@ -15,6 +15,10 @@ const VOICE = { type: 'triangle' as OscillatorType, attack: 0.02, decay: 0.6 };
 
 let ctx: AudioContext | null = null;
 let muted = loadMuted();
+let keepAlive: { osc: OscillatorNode; gain: GainNode } | null = null;
+// ② burst guard: track whether the audio clock is actually advancing.
+let lastPerf = -1;
+let lastCtxTime = -1;
 
 function loadMuted(): boolean {
   try {
@@ -34,10 +38,42 @@ function audioCtx(): AudioContext {
   return ctx;
 }
 
-/** Resume the context on a user gesture (required on mobile). */
+/** Resume the context on a user gesture (required on mobile) and keep it alive. */
 export function unlock(): void {
   const c = audioCtx();
   if (c.state !== 'running') void c.resume();
+  startKeepAlive(c);
+}
+
+/**
+ * ① Keep-alive: an INAUDIBLE but non-zero ultrasonic tone that runs the whole
+ * time the game is in active play, so neither the Bluetooth A2DP link nor the
+ * Web Audio clock sleeps between taps (which causes the cold-start lag and the
+ * "all notes at once" burst). Gated off on background/mute to save battery.
+ */
+function startKeepAlive(c: AudioContext): void {
+  if (keepAlive || muted) return;
+  const osc = c.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.value = Math.min(20000, c.sampleRate / 2 - 1000); // near-ultrasonic, inaudible
+  const gain = c.createGain();
+  gain.gain.value = 0.0008; // ~-62 dBFS: non-zero energy, but inaudible
+  osc.connect(gain).connect(c.destination);
+  osc.start();
+  keepAlive = { osc, gain };
+}
+
+/** Stop the keep-alive (on background/mute) so the Bluetooth link can idle. */
+export function stopKeepAlive(): void {
+  if (!keepAlive) return;
+  try {
+    keepAlive.osc.stop();
+  } catch {
+    /* already stopped */
+  }
+  keepAlive.osc.disconnect();
+  keepAlive.gain.disconnect();
+  keepAlive = null;
 }
 
 export const isMuted = (): boolean => muted;
@@ -49,6 +85,9 @@ export function setMuted(m: boolean): void {
   } catch {
     /* storage may be unavailable */
   }
+  // No sound while muted → no need to hold the Bluetooth link open.
+  if (m) stopKeepAlive();
+  else if (ctx) startKeepAlive(ctx);
 }
 
 export const toggleMuted = (): boolean => {
@@ -73,7 +112,30 @@ function whenRunning(fn: (c: AudioContext) => void): void {
 
 const CHORD_DECAY = VOICE.decay * 2; // hold the solved chord twice as long
 
+/**
+ * ② Burst guard: if wall-clock time has passed but the audio clock hasn't
+ * advanced, the pipeline is frozen (mobile/Bluetooth can freeze it while still
+ * reporting state==='running'). Scheduling then queues notes at one past time
+ * that all fire at once on wake — so report "not live" and drop the note.
+ */
+function clockLive(c: AudioContext): boolean {
+  const t = c.currentTime;
+  const p = performance.now();
+  let live = true;
+  if (lastPerf >= 0) {
+    const wall = (p - lastPerf) / 1000;
+    if (wall > 0.1 && t - lastCtxTime < wall * 0.25) {
+      live = false;
+      void c.resume(); // nudge it awake for next time
+    }
+  }
+  lastPerf = p;
+  lastCtxTime = t;
+  return live;
+}
+
 function playFreq(c: AudioContext, freq: number, when: number, peak: number, decay = VOICE.decay): void {
+  if (!clockLive(c)) return; // drop rather than queue against a frozen clock
   const t0 = c.currentTime + when;
   const osc = c.createOscillator();
   const gain = c.createGain();
