@@ -193,10 +193,12 @@ export function startGame(root: HTMLElement): void {
     shell.gridEl.classList.remove('solved');
     shell.tokensEl.classList.remove('solved');
     shell.stageEl.classList.add('fade');
+    shell.bandEl.classList.add('fade'); // fade the target sequence + text in sync
     setTimeout(() => {
       phase = 'playing'; // before newPuzzle so its updateHighlights paints clickables
       newPuzzle();
       shell.stageEl.classList.remove('fade');
+      shell.bandEl.classList.remove('fade');
     }, 350);
   }
 

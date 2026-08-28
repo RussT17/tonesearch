@@ -222,10 +222,12 @@ body {
 }
 
 /* --- transitions & feedback --- */
-.stage {
+.stage,
+.tokens-band {
   transition: opacity 350ms ease;
 }
-.stage.fade {
+.stage.fade,
+.tokens-band.fade {
   opacity: 0;
 }
 .grid.shake {

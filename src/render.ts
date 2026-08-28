@@ -15,6 +15,7 @@ export interface Shell {
   stageEl: HTMLElement;
   gridEl: HTMLElement;
   tokensEl: HTMLElement;
+  bandEl: HTMLElement; // the whole target band (label + tokens + name), for fading
   nameEl: HTMLElement;
   giveUpBtn: HTMLButtonElement;
   muteBtn: HTMLButtonElement;
@@ -62,7 +63,7 @@ export function mountShell(root: HTMLElement): Shell {
   tokensEl.setAttribute('aria-label', 'Target intervals');
 
   root.append(topbar, stageEl, tokensBand, controls);
-  return { difficultyEl, counterEl, stageEl, gridEl, tokensEl, nameEl, giveUpBtn, muteBtn };
+  return { difficultyEl, counterEl, stageEl, gridEl, tokensEl, bandEl: tokensBand, nameEl, giveUpBtn, muteBtn };
 }
 
 /** References to the rendered grid, so input/game can drive it. */
