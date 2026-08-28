@@ -48,11 +48,20 @@ export function startGame(root: HTMLElement): void {
     return Math.abs(ca.col - cb.col) + Math.abs(ca.row - cb.row) === 1;
   };
 
-  // Sync both views to the current selection: grid cells + path line, and the
-  // target's satisfied diamonds + pink line (incremental).
+  // Sync both views to the current selection: grid selected/clickable/start,
+  // path line, and the target's satisfied diamonds + pink line (incremental).
   const updateHighlights = (): void => {
     const sel = new Set(selection);
-    view.cellEls.forEach((el, id) => el.classList.toggle('selected', sel.has(id)));
+    const last = selection[selection.length - 1];
+    view.cellEls.forEach((el, id) => {
+      el.classList.toggle('selected', sel.has(id));
+      el.classList.toggle('start', id === selection[0]); // styled only when .solved
+      const clickable =
+        phase === 'playing' &&
+        !sel.has(id) &&
+        (selection.length === 0 || (last !== undefined && adjacent(last, id)));
+      el.classList.toggle('clickable', clickable);
+    });
     drawPath(view, selection);
     tokenView.tokenEls.forEach((el, i) => el.classList.toggle('selected', i < selection.length));
     drawTokenLine(tokenView, selection.length);
@@ -70,6 +79,9 @@ export function startGame(root: HTMLElement): void {
           audio.playCancel(); // re-tapping a selected note rewinds → deselect blip
           return;
         }
+        const last = selection[selection.length - 1];
+        const clickable = selection.length === 0 || (last !== undefined && adjacent(last, id));
+        if (!clickable) return; // non-adjacent → fully inert (no sound)
         audio.playNoteMidi(ascendMidi(noteOf.get(id)!, selectionMidis[selectionMidis.length - 1]));
       };
       el.onclick = () => onTap(id);
@@ -97,23 +109,22 @@ export function startGame(root: HTMLElement): void {
     if (import.meta.env.DEV) (window as unknown as { __solution: number[] }).__solution = puzzle.solutionPath;
   };
 
-  const shake = (): void => {
-    shell.gridEl.classList.add('shake');
-    setTimeout(() => shell.gridEl.classList.remove('shake'), 320);
+  const flashWrong = (id: number): void => {
+    const el = view.cellEls.get(id);
+    if (!el) return;
+    el.classList.add('wrong');
+    setTimeout(() => el.classList.remove('wrong'), 420);
   };
 
   function onTap(id: number): void {
     if (phase !== 'playing') return;
     const next = updateSelection(selection, id, adjacent);
-    if (next === selection) {
-      shake(); // non-adjacent → doesn't continue the sequence
-      return;
-    }
+    if (next === selection) return; // non-adjacent → fully inert (no sound, no visual)
     if (next.length > selection.length) {
       // appended a cell — per-step validation: it must continue the sequence
       const notes = next.map((cid) => noteOf.get(cid)!);
       if (!isPrefix(notes, puzzle.pattern)) {
-        shake(); // wrong interval → doesn't continue
+        flashWrong(id); // adjacent but wrong interval → gentle reddish flash on the cell
         return;
       }
       selectionMidis.push(ascendMidi(noteOf.get(id)!, selectionMidis[selectionMidis.length - 1]));
@@ -129,6 +140,7 @@ export function startGame(root: HTMLElement): void {
     phase = 'busy';
     shell.gridEl.classList.add('solved');
     shell.tokensEl.classList.add('solved');
+    updateHighlights(); // clear clickable highlights, mark the start note
     audio.playChord(puzzle.solutionNotes, 0.4); // chord only, well after the final tap note
     solved += 1;
     shell.counterEl.textContent = `Solved: ${solved}`;
@@ -151,9 +163,9 @@ export function startGame(root: HTMLElement): void {
     shell.tokensEl.classList.remove('solved');
     shell.stageEl.classList.add('fade');
     setTimeout(() => {
+      phase = 'playing'; // before newPuzzle so its updateHighlights paints clickables
       newPuzzle();
       shell.stageEl.classList.remove('fade');
-      phase = 'playing';
     }, 350);
   }
 

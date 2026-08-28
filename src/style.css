@@ -6,6 +6,8 @@
   --neon: #c77dff;
   --neon-bright: #e0aaff;
   --neon-dim: rgba(199, 125, 255, 0.14);
+  --neon-mute: rgba(199, 125, 255, 0.4); /* non-clickable / idle cell border */
+  --wrong: #f2688c; /* rose-red for a wrong tap, pairs with the neon purple */
   --text: #ece7f5;
   --text-dim: rgba(236, 231, 245, 0.55);
   --cell-fill: rgba(199, 125, 255, 0.06);
@@ -99,12 +101,18 @@ body {
   display: grid;
   place-items: center;
   background: var(--cell-fill);
-  border: 1.5px solid var(--neon);
+  border: 1.5px solid var(--neon-mute);
   border-radius: 4px;
-  box-shadow: 0 0 8px var(--neon-dim), inset 0 0 6px var(--neon-dim);
   transform: rotate(45deg);
   cursor: pointer;
-  transition: background 0.12s ease, box-shadow 0.12s ease;
+  transition: background 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+/* clickable grid cells (and the always-lit target diamonds) glow brighter */
+.cell.clickable,
+.token-diamond {
+  border-color: var(--neon);
+  background: rgba(199, 125, 255, 0.1);
+  box-shadow: 0 0 10px var(--neon-dim), inset 0 0 6px var(--neon-dim);
 }
 .cell .glyph {
   transform: rotate(-45deg);
@@ -117,6 +125,19 @@ body {
 .cell.selected {
   background: rgba(199, 125, 255, 0.28);
   box-shadow: 0 0 14px var(--neon), inset 0 0 10px var(--neon-dim);
+}
+/* wrong tap (adjacent but wrong interval): a brief gentle reddish flash */
+.cell.wrong {
+  animation: wrongFlash 0.42s ease;
+}
+@keyframes wrongFlash {
+  0% { border-color: var(--neon); }
+  25% {
+    border-color: var(--wrong);
+    background: rgba(242, 104, 140, 0.22);
+    box-shadow: 0 0 14px rgba(242, 104, 140, 0.6);
+  }
+  100% { border-color: var(--neon); }
 }
 
 /* --- target sequence: puzzle-style diamonds in a row --- */
@@ -198,6 +219,13 @@ body {
   0% { box-shadow: 0 0 8px var(--neon-dim); }
   50% { box-shadow: 0 0 26px var(--neon-bright); }
   100% { box-shadow: 0 0 20px var(--neon-bright); }
+}
+/* the sequence's starting note: a steady bright near-white anchor (solve/reveal) */
+.solved .cell.start {
+  animation: none;
+  border-color: #f2e9ff;
+  background: rgba(242, 233, 255, 0.34);
+  box-shadow: 0 0 24px #e0aaff, inset 0 0 14px #ffffff;
 }
 
 /* --- start gate (unlocks audio on the first tap) --- */
