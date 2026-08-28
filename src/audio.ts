@@ -186,35 +186,29 @@ export function playCancel(): void {
   });
 }
 
-/** Root-on-bottom voicing: root lowest, other tones wrapped up above it. */
-function voicedMidis(notes: readonly Fifths[]): number[] {
-  const rootMidi = BASE_MIDI + pitchClass(notes[0]!);
-  return notes
-    .map((n, i) => {
-      let m = BASE_MIDI + pitchClass(n);
-      if (i > 0 && m < rootMidi) m += 12;
-      return m;
-    })
-    .sort((a, b) => a - b);
+/**
+ * Ascending voicing: root on the bottom, each note voiced above the previous.
+ * Matches the selection/reveal arpeggio (same base + rule) so the chord sits in
+ * the exact same octaves and order as the notes the player just heard.
+ */
+export function ascendingMidis(notes: readonly Fifths[]): number[] {
+  const midis: number[] = [];
+  let prev = -Infinity;
+  for (const n of notes) {
+    let m = BASE_MIDI + pitchClass(n);
+    while (m <= prev) m += 12;
+    midis.push(m);
+    prev = m;
+  }
+  return midis;
 }
 
-/** Strike the chord (all tones together), root on the bottom, held long. Used
- * on a solve — the player has already heard the tones while selecting. */
+/** Strike the chord (all tones together), held long. Voiced identically to the
+ * arpeggio the player heard while selecting/revealing. */
 export function playChord(notes: readonly Fifths[], when = 0): void {
   if (muted) return;
-  const midis = voicedMidis(notes);
+  const midis = ascendingMidis(notes);
   whenRunning((c) => {
     for (const m of midis) playFreq(c, midiToFreq(m), when, 0.16, CHORD_DECAY);
-  });
-}
-
-/** Arpeggiate root→up, then strike the held chord. Used on Give Up (reveal). */
-export function playSequence(notes: readonly Fifths[], gap = 0.18): void {
-  if (muted) return;
-  const midis = voicedMidis(notes);
-  whenRunning((c) => {
-    midis.forEach((m, i) => playFreq(c, midiToFreq(m), i * gap, 0.26));
-    const t = midis.length * gap + 0.15;
-    for (const m of midis) playFreq(c, midiToFreq(m), t, 0.16, CHORD_DECAY);
   });
 }

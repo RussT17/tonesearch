@@ -139,8 +139,11 @@ export function startGame(root: HTMLElement): void {
     phase = 'busy';
     shell.gridEl.classList.add('solved');
     shell.tokensEl.classList.add('solved');
-    updateHighlights(); // clear clickable highlights, mark the start note
-    audio.playChord(puzzle.solutionNotes, 0.4); // chord only, well after the final tap note
+    updateHighlights(); // clear clickable highlights
+    // Play the player's OWN selected notes (their root, which may differ from the
+    // generator's) so the chord matches the arpeggio they just heard.
+    const selectedNotes = selection.map((id) => noteOf.get(id)!);
+    audio.playChord(selectedNotes, 0.4); // chord only, well after the final tap note
     solved += 1;
     shell.counterEl.textContent = `Solved: ${solved}`;
     setTimeout(nextPuzzle, 1150);
