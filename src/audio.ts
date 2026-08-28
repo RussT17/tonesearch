@@ -13,6 +13,12 @@ const BASE_MIDI = 60; // C4 — the fixed reference octave (docs §6/E3)
 
 const VOICE = { type: 'triangle' as OscillatorType, attack: 0.02, decay: 0.6 };
 
+// Octave-seating for sequences: each sequence's ROOT is placed at whichever
+// octave of its pitch class sits closest to `anchorMidi` (tie → the lower one),
+// and the remaining tones stack ascending above it. The one knob to tune the
+// register — lower it to sink everything, raise it to lift. (60 = C4.)
+const VOICING = { anchorMidi: 60 };
+
 let ctx: AudioContext | null = null;
 let muted = loadMuted();
 let keepAlive: { osc: OscillatorNode; gain: GainNode } | null = null;
@@ -191,18 +197,25 @@ export function playCancel(): void {
  * Matches the selection/reveal arpeggio (same base + rule) so the chord sits in
  * the exact same octaves and order as the notes the player just heard.
  */
+/** The octave of pitch class `pc` (0–11) nearest `anchor` (tie → the lower). */
+function seatNearAnchor(pc: number, anchor: number): number {
+  let m = pc;
+  while (m < anchor - 6) m += 12;
+  while (m >= anchor + 6) m -= 12;
+  return m;
+}
+
 export function ascendingMidis(notes: readonly Fifths[]): number[] {
   const midis: number[] = [];
   let prev = -Infinity;
-  for (const n of notes) {
-    let m = BASE_MIDI + pitchClass(n);
+  notes.forEach((n, i) => {
+    // Root seated near the anchor; every later tone stacks ascending above it
+    // (preserves all intervals). No separate fold — the anchor picks the octave.
+    let m = i === 0 ? seatNearAnchor(pitchClass(n), VOICING.anchorMidi) : pitchClass(n);
     while (m <= prev) m += 12;
     midis.push(m);
     prev = m;
-  }
-  // If the root sits in the high half of the reference octave, drop the WHOLE
-  // voicing an octave (preserves intervals) so starting pitches don't run high.
-  if (notes.length > 0 && pitchClass(notes[0]!) >= 6) return midis.map((m) => m - 12);
+  });
   return midis;
 }
 
