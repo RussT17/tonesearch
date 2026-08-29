@@ -326,7 +326,8 @@ body {
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--text);
-  text-shadow: 0 0 8px var(--neon-dim);
+  /* subtle pink bloom (the game's path-line accent) behind the near-white title */
+  text-shadow: 0 0 8px rgba(224, 170, 255, 0.35), 0 0 24px rgba(224, 170, 255, 0.22);
 }
 .start-sub {
   color: var(--text-dim);
@@ -343,8 +344,7 @@ body {
   align-items: center;
   justify-content: center;
   margin-top: 0.9rem;
-  padding: 0.8rem 3rem; /* horizontal room for the hexagon points */
-  min-height: 3rem;
+  padding: 0;
   background: none;
   border: none;
   cursor: pointer;
@@ -356,30 +356,32 @@ body {
   text-shadow: 0 0 6px var(--neon-dim); /* like a note glyph */
   -webkit-tap-highlight-color: transparent;
 }
-.start-btn span {
-  position: relative;
-  z-index: 1;
-}
 .start-btn .hex {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  display: block;
+  width: 156px;
+  height: 56px;
   overflow: visible; /* let the glow render past the viewBox */
   filter: drop-shadow(0 0 8px var(--neon-dim));
   transition: filter 0.12s ease;
 }
-.start-btn .hex polygon {
+.start-btn .hex path {
   fill: rgba(199, 125, 255, 0.1);
   stroke: var(--neon);
   stroke-width: 1.5;
   stroke-linejoin: round;
   transition: fill 0.12s ease;
 }
+.start-btn span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 1;
+}
 .start-btn:active .hex {
   filter: drop-shadow(0 0 14px var(--neon));
 }
-.start-btn:active .hex polygon {
+.start-btn:active .hex path {
   fill: rgba(199, 125, 255, 0.28);
 }
 

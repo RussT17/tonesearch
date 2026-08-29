@@ -330,8 +330,8 @@ export function startGame(root: HTMLElement): void {
     const btn = document.createElement('button');
     btn.className = 'start-btn';
     btn.innerHTML =
-      '<svg class="hex" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">' +
-      '<polygon points="2,20 20,2 80,2 98,20 80,38 20,38" vector-effect="non-scaling-stroke"/>' +
+      '<svg class="hex" viewBox="0 0 144 52" aria-hidden="true">' +
+      '<path d="M 5.38 29.69 Q 2 26 5.38 22.31 L 20.62 5.69 Q 24 2 29 2 L 115 2 Q 120 2 123.38 5.69 L 138.62 22.31 Q 142 26 138.62 29.69 L 123.38 46.31 Q 120 50 115 50 L 29 50 Q 24 50 20.62 46.31 Z" vector-effect="non-scaling-stroke"/>' +
       '</svg><span>Play</span>';
     inner.append(title, sub, btn);
     overlay.append(inner);
