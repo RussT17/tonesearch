@@ -229,13 +229,15 @@ export function startGame(root: HTMLElement): void {
       return;
     }
     const v = shell.difficultyEl.value;
-    if (isTier(v)) tier = v;
+    if (!isTier(v)) return;
+    tier = v;
     try {
       localStorage.setItem(TIER_KEY, tier);
     } catch {
       /* storage may be unavailable */
     }
-    newPuzzle(); // fresh puzzle in the new tier
+    phase = 'busy'; // block taps during the fade
+    nextPuzzle(); // fade out → fresh puzzle in the new tier → fade in
   };
 
   const paintMute = (m: boolean): void => {
