@@ -1,0 +1,16 @@
+{
+  "name": "ToneSearch",
+  "short_name": "ToneSearch",
+  "description": "A neon puzzle game for pairing note names with intervals — find the chord shape in the grid.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0713",
+  "theme_color": "#0b0713",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
