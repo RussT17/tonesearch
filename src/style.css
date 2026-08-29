@@ -115,6 +115,7 @@ body {
   inset: 0;
   pointer-events: none;
   overflow: visible;
+  z-index: 2; /* above the diamonds so the line crosses over their edges cleanly */
 }
 .path-overlay polyline {
   fill: none;

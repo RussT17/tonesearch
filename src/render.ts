@@ -15,6 +15,57 @@ const ICON_INSTALL =
   '<path d="M12 3v10m0 0l-3.5-3.5M12 13l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' +
   '<path d="M5 20h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
 
+let maskSeq = 0;
+const svgEl = (tag: string, attrs: Record<string, string>): SVGElement => {
+  const e = document.createElementNS(SVG_NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]!);
+  return e;
+};
+
+/**
+ * Give the path line a radial fade mask so it thins to nothing right at each
+ * vertex (the letters) and stays bright at the mid-segments (the shared edges).
+ * Combined with the line painting on top of the cells, the line crosses cleanly
+ * over the diamond edges yet leaves the letters unobstructed. Returns the group
+ * to fill with one fade circle per vertex, plus that circle's fill.
+ */
+function attachFadeMask(
+  svg: SVGSVGElement,
+  poly: SVGPolylineElement,
+  w: number,
+  h: number,
+): { group: SVGGElement; fill: string } {
+  const uid = `pf${maskSeq++}`;
+  const M = 48; // margin so the line's glow isn't clipped by the mask region
+  const grad = svgEl('radialGradient', { id: `${uid}g` });
+  grad.append(
+    svgEl('stop', { offset: '0%', 'stop-color': '#000', 'stop-opacity': '1' }),
+    svgEl('stop', { offset: '100%', 'stop-color': '#000', 'stop-opacity': '0' }),
+  );
+  const group = svgEl('g', {}) as SVGGElement;
+  const region = { x: `${-M}`, y: `${-M}`, width: `${w + 2 * M}`, height: `${h + 2 * M}` };
+  const mask = svgEl('mask', { id: `${uid}m`, maskUnits: 'userSpaceOnUse', ...region });
+  mask.append(svgEl('rect', { ...region, fill: '#fff' }), group); // white = visible; circles subtract
+  const defs = svgEl('defs', {});
+  defs.append(grad, mask);
+  svg.append(defs);
+  poly.setAttribute('mask', `url(#${uid}m)`);
+  return { group, fill: `url(#${uid}g)` };
+}
+
+/** Put a fade circle (radius `r`) at each path vertex so the line dims there. */
+function setFadeVertices(
+  group: SVGGElement,
+  pts: ReadonlyArray<{ x: number; y: number }>,
+  r: number,
+  fill: string,
+): void {
+  while (group.firstChild) group.removeChild(group.firstChild);
+  for (const p of pts) {
+    group.append(svgEl('circle', { cx: `${p.x}`, cy: `${p.y}`, r: `${r}`, fill }));
+  }
+}
+
 export interface Shell {
   difficultyEl: HTMLSelectElement;
   counterEl: HTMLElement;
@@ -87,6 +138,9 @@ export interface GridView {
   cellEls: Map<number, HTMLElement>;
   polyline: SVGPolylineElement;
   centers: Map<number, { x: number; y: number }>;
+  fadeGroup: SVGGElement;
+  fadeRadius: number;
+  fadeFill: string;
 }
 
 /**
@@ -128,6 +182,7 @@ export function renderGrid(
   const polyline = document.createElementNS(SVG_NS, 'polyline') as SVGPolylineElement;
   svg.append(polyline);
   gridEl.append(svg);
+  const fade = attachFadeMask(svg, polyline, box.width * s, box.height * s);
 
   const d = s * Math.SQRT2 * CELL_FILL; // diamond side length
   const glyphPx = Math.max(11, Math.min(d * 0.42, 26));
@@ -154,7 +209,8 @@ export function renderGrid(
     cellEls.set(cell.id, div);
   }
 
-  return { cellEls, polyline, centers };
+  // fade covers the letter (~0.5·s) but stays well inside the edge crossing (~0.7·s)
+  return { cellEls, polyline, centers, fadeGroup: fade.group, fadeRadius: s * 0.5, fadeFill: fade.fill };
 }
 
 /** References to the rendered target row, so game.ts can highlight it in step. */
@@ -162,6 +218,9 @@ export interface TokenView {
   tokenEls: Map<number, HTMLElement>;
   polyline: SVGPolylineElement;
   centers: Map<number, { x: number; y: number }>;
+  fadeGroup: SVGGElement;
+  fadeRadius: number;
+  fadeFill: string;
 }
 
 const TOKEN_REF_LEN = 5; // size the target row to fit up to this many (future 5-note chords)
@@ -203,6 +262,7 @@ export function renderTokens(tokensEl: HTMLElement, puzzle: Puzzle, pitch: numbe
   const polyline = document.createElementNS(SVG_NS, 'polyline') as SVGPolylineElement;
   svg.append(polyline);
   tokensEl.append(svg);
+  const fade = attachFadeMask(svg, polyline, rowW, rowH);
 
   const fontPx = Math.max(12, Math.min(side * 0.42, 26));
   const tokenEls = new Map<number, HTMLElement>();
@@ -227,24 +287,20 @@ export function renderTokens(tokensEl: HTMLElement, puzzle: Puzzle, pitch: numbe
     tokenEls.set(i, div);
   });
 
-  return { tokenEls, polyline, centers };
+  return { tokenEls, polyline, centers, fadeGroup: fade.group, fadeRadius: pitch * 0.38, fadeFill: fade.fill };
 }
 
 /** Draw the pink line through the first `count` satisfied target diamonds. */
 export function drawTokenLine(view: TokenView, count: number): void {
-  const pts: string[] = [];
-  for (let i = 0; i < count; i++) {
-    const c = view.centers.get(i)!;
-    pts.push(`${c.x},${c.y}`);
-  }
-  view.polyline.setAttribute('points', pts.join(' '));
+  const pts: { x: number; y: number }[] = [];
+  for (let i = 0; i < count; i++) pts.push(view.centers.get(i)!);
+  view.polyline.setAttribute('points', pts.map((c) => `${c.x},${c.y}`).join(' '));
+  setFadeVertices(view.fadeGroup, pts, view.fadeRadius, view.fadeFill);
 }
 
 /** Update the SVG path line to pass through the given ordered cell ids. */
 export function drawPath(view: GridView, ids: number[]): void {
-  const pts = ids.map((id) => {
-    const c = view.centers.get(id)!;
-    return `${c.x},${c.y}`;
-  });
-  view.polyline.setAttribute('points', pts.join(' '));
+  const pts = ids.map((id) => view.centers.get(id)!);
+  view.polyline.setAttribute('points', pts.map((c) => `${c.x},${c.y}`).join(' '));
+  setFadeVertices(view.fadeGroup, pts, view.fadeRadius, view.fadeFill);
 }
