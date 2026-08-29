@@ -135,6 +135,7 @@ export function startGame(root: HTMLElement): void {
   };
 
   const newPuzzle = (): void => {
+    shell.giveUpBtn.classList.remove('lit'); // clear the held Give Up highlight
     puzzle = generatePuzzle(configFor(tier), bankForTier(tier), Math.floor(Math.random() * 1e9));
     selection = [];
     coordOf = new Map(puzzle.cells.map((c) => [c.id, { col: c.col, row: c.row }]));
@@ -221,7 +222,11 @@ export function startGame(root: HTMLElement): void {
     }, 350);
   }
 
-  shell.giveUpBtn.onclick = reveal;
+  shell.giveUpBtn.onpointerdown = () => {
+    if (phase !== 'playing') return;
+    shell.giveUpBtn.classList.add('lit'); // stay highlighted through the reveal
+    reveal();
+  };
 
   // Size the borderless dropdown to its current word so the caret trails the word
   // by a fixed gap (a native select would otherwise size to the widest option).

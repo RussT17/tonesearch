@@ -47,7 +47,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.25rem;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   letter-spacing: 0.04em;
   color: var(--text-faint); /* match the install/mute chrome */
 }
@@ -194,7 +194,6 @@ body {
   font-size: 0.9rem;
   letter-spacing: 0.04em;
   color: var(--text-dim);
-  opacity: 0.7;
   min-height: 1em; /* reserve space so the row doesn't jump between puzzles */
 }
 
@@ -213,7 +212,9 @@ body {
   cursor: pointer;
   transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
-.giveup:active {
+/* .lit holds the pressed look from Give Up until the next puzzle renders */
+.giveup:active,
+.giveup.lit {
   background: rgba(236, 231, 245, 0.08);
   color: var(--text);
   border-color: rgba(236, 231, 245, 0.4);
@@ -234,18 +235,21 @@ body {
   -webkit-tap-highlight-color: transparent; /* no white flash on tap */
   transition: opacity 0.12s ease, color 0.12s ease;
 }
-/* hover only (desktop) — no :active state, so a tap doesn't flash the icon */
-.install:hover,
-.mute:hover {
-  opacity: 1;
-  color: var(--text);
+/* brighten only on a real (mouse) hover — never on a touch tap, which browsers
+   emulate as :hover and would flash the icon lighter. */
+@media (hover: hover) {
+  .install:hover,
+  .mute:hover {
+    opacity: 1;
+    color: var(--text);
+  }
 }
 .install {
   left: calc(0.5rem + env(safe-area-inset-left, 0px));
   display: none; /* shown only when installable (game.ts adds .show) */
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
 }
 .install.show { display: inline-flex; }
 .install svg { width: 1rem; height: 1rem; }
