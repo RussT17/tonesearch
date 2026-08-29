@@ -378,11 +378,16 @@ body {
   place-items: center;
   z-index: 1;
 }
-.start-btn:active .hex {
-  filter: drop-shadow(0 0 14px var(--neon));
+/* pressed state (matches a tapped/selected grid cell); .lit holds it briefly on
+   start so the press is felt before the overlay fades. */
+.start-btn:active .hex,
+.start-btn.lit .hex {
+  filter: drop-shadow(0 0 16px var(--neon));
 }
-.start-btn:active .hex path {
+.start-btn:active .hex path,
+.start-btn.lit .hex path {
   fill: rgba(199, 125, 255, 0.28);
+  stroke: var(--neon-bright);
 }
 
 @media (prefers-reduced-motion: reduce) {

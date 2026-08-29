@@ -341,8 +341,11 @@ export function startGame(root: HTMLElement): void {
       if (begun) return;
       begun = true;
       audio.unlock(); // resume + warm-up inside this gesture
-      overlay.classList.add('hide');
-      setTimeout(() => overlay.remove(), 400);
+      btn.classList.add('lit'); // brighten like a tapped note cell
+      setTimeout(() => {
+        overlay.classList.add('hide');
+        setTimeout(() => overlay.remove(), 400);
+      }, 150); // brief hold so the press registers before the fade
     };
     btn.addEventListener('click', begin);
     overlay.addEventListener('pointerdown', begin);
