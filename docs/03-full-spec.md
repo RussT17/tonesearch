@@ -223,8 +223,8 @@ Web Audio API, synthesized (no samples).
   **bottom spacer** pulling both upward off the bottom edge. Only the **grid**
   scales to fit its zone (never exceeding the per-diamond cap); the **target group
   is the same size and vertical position on every puzzle**. The grid-zone : spacer
-  ratio [param] sets how high everything floats (start 2:1 → grid center ≈ ⅓, target
-  center ≈ ⅔ of the area).
+  ratio [param] sets how high everything floats (currently 2 : 0.4 → grid center
+  ≈ 38%, target ≈ 75%, ~12% empty below).
 - **Sequence name [v2]:** each puzzle shows its pattern's human name (e.g.
   "Dominant 7th", "Major third") near the target diamonds — **always visible but
   subtle**, so a player who wants to name the chord themselves first can mentally
