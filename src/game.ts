@@ -325,9 +325,14 @@ export function startGame(root: HTMLElement): void {
     const sub = document.createElement('div');
     sub.className = 'start-sub';
     sub.textContent = 'Find the interval sequence in the grid';
+    // Play button as a widened diamond (hexagon: left/right points + flat
+    // top/bottom edges), styled like a lit target diamond with the word inside.
     const btn = document.createElement('button');
     btn.className = 'start-btn';
-    btn.textContent = 'Play';
+    btn.innerHTML =
+      '<svg class="hex" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">' +
+      '<polygon points="2,20 20,2 80,2 98,20 80,38 20,38" vector-effect="non-scaling-stroke"/>' +
+      '</svg><span>Play</span>';
     inner.append(title, sub, btn);
     overlay.append(inner);
 
