@@ -163,10 +163,13 @@ excluded combos are exactly the musically implausible triple-accidental ones.
   cells [C9].
 - **Path rule:** each cell used **at most once** — this alone prevents any
   self-crossing under orthogonal movement [C2/C3].
-- **First tap = root [clarification]:** because v1 is root-position (every
-  sequence starts on R), the first cell of any valid path **is** the root. The
-  anti-cheat's job is thus to hide *which* cell is the root, not that a root
-  exists.
+- **First tap sets the reference note [clarification]:** through Hard every
+  sequence is root-position, so the first cell of any valid path **is** the root,
+  and the anti-cheat hides *which* cell is the root. **Expert** adds off-root and
+  rootless voicings (inversions start on the 3rd/5th; rootless voicings omit R
+  entirely), so the first tap is just the sequence's first note — the root-agnostic
+  per-step check (`note[i]−note[0] == interval[i]−interval[0]`) already handles this
+  unchanged (docs/07 §0).
 - **Input [F5]:** tap cells in order. Tapping an **already-selected** cell rewinds
   the path to just before it — it and every cell after it are unselected (tapping
   the last-selected cell is the pop-one special case) [C5]. A **Clear** control

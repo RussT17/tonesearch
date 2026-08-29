@@ -12,6 +12,9 @@ const MUTE_KEY = 'tonesearch.muted';
 const BASE_MIDI = 60; // C4 — the fixed reference octave (docs §6/E3)
 
 const VOICE = { type: 'triangle' as OscillatorType, attack: 0.02, decay: 0.6 };
+// A distinct, rounder bass voice for the implied root under rootless voicings
+// (Expert) — sounds like a bassist grounding the chord (docs/07 §4).
+const BASS = { type: 'sine' as OscillatorType, peak: 0.16, decay: 0.85 };
 
 // Octave-seating for sequences: each sequence's ROOT is placed at whichever
 // octave of its pitch class sits closest to `anchorMidi` (tie → the lower one),
@@ -144,12 +147,19 @@ function clockLive(c: AudioContext): boolean {
   return live;
 }
 
-function playFreq(c: AudioContext, freq: number, when: number, peak: number, decay = VOICE.decay): void {
+function playFreq(
+  c: AudioContext,
+  freq: number,
+  when: number,
+  peak: number,
+  decay = VOICE.decay,
+  oscType: OscillatorType = VOICE.type,
+): void {
   if (!clockLive(c)) return; // drop rather than queue against a frozen clock
   const t0 = c.currentTime + when;
   const osc = c.createOscillator();
   const gain = c.createGain();
-  osc.type = VOICE.type;
+  osc.type = oscType;
   osc.frequency.value = freq;
   gain.gain.setValueAtTime(0.0001, t0);
   gain.gain.exponentialRampToValueAtTime(peak, t0 + VOICE.attack);
@@ -227,4 +237,24 @@ export function playChord(notes: readonly Fifths[], when = 0): void {
   whenRunning((c) => {
     for (const m of midis) playFreq(c, midiToFreq(m), when, 0.16, CHORD_DECAY);
   });
+}
+
+/** The implied root voiced as a bass note ~an octave below the sequence's first
+ * note — the ROOT's pitch class (not the first note), seated in that register. */
+function bassMidi(rootFifths: Fifths, notes: readonly Fifths[]): number {
+  const first = ascendingMidis(notes)[0] ?? VOICING.anchorMidi;
+  return seatNearAnchor(pitchClass(rootFifths), first - 12);
+}
+
+/** Sound the implied root beneath a rootless voicing, in the distinct bass voice
+ * (docs/07 §4). No-op for rooted patterns — the caller decides when to invoke it. */
+export function playRootBass(
+  rootFifths: Fifths,
+  notes: readonly Fifths[],
+  when = 0,
+  decay = BASS.decay,
+): void {
+  if (muted || notes.length === 0) return;
+  const freq = midiToFreq(bassMidi(rootFifths, notes));
+  whenRunning((c) => playFreq(c, freq, when, BASS.peak, decay, BASS.type));
 }

@@ -36,6 +36,7 @@ const TIERS: Record<Tier, TierParams> = {
   easy: { gridCellCount: 10, noteRange: [-7, 7] },
   medium: { gridCellCount: 14, noteRange: [-8, 8] },
   hard: { gridCellCount: 18, noteRange: [-10, 10] },
+  expert: { gridCellCount: 18, noteRange: [-12, 12] },
 };
 
 /** Shared, tier-independent params. */

@@ -92,7 +92,7 @@ export function mountShell(root: HTMLElement): Shell {
   const topbar = el('div', 'topbar');
   const difficultyEl = el<HTMLSelectElement>('select', 'difficulty');
   difficultyEl.setAttribute('aria-label', 'Difficulty');
-  for (const [value, label] of [['easy', 'Easy'], ['medium', 'Medium'], ['hard', 'Hard']] as const) {
+  for (const [value, label] of [['easy', 'Easy'], ['medium', 'Medium'], ['hard', 'Hard'], ['expert', 'Expert']] as const) {
     const opt = document.createElement('option');
     opt.value = value;
     opt.textContent = label;

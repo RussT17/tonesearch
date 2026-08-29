@@ -4,7 +4,7 @@ import { configFor } from '../config';
 import { bankForTier, type Tier } from '../bank';
 import { footprint, aspect } from '../geometry';
 
-const TIERS: Tier[] = ['easy', 'medium', 'hard'];
+const TIERS: Tier[] = ['easy', 'medium', 'hard', 'expert'];
 const SEEDS = Array.from({ length: 150 }, (_, i) => i);
 
 function cellById(p: Puzzle, id: number) {

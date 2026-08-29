@@ -22,7 +22,8 @@ type Phase = 'playing' | 'busy';
 
 const TIER_KEY = 'tonesearch.difficulty';
 
-const isTier = (t: string): t is Tier => t === 'easy' || t === 'medium' || t === 'hard';
+const isTier = (t: string): t is Tier =>
+  t === 'easy' || t === 'medium' || t === 'hard' || t === 'expert';
 
 function loadTier(): Tier {
   try {
@@ -34,9 +35,11 @@ function loadTier(): Tier {
   return 'easy'; // default
 }
 
-/** The caption: name + category word (Interval/Triad/Chord), then any marker. */
+/** The caption: name + category word (Interval/Triad/Chord), then any marker.
+ * Expert names are self-descriptive ("Major Triad (1st inv)", "Quartal"), so the
+ * category word is suppressed there (docs/07 §3). */
 const patternName = (p: Pattern): string =>
-  `${p.display} ${categoryLabel(p.kind)}${p.reduced ? ' [reduced]' : ''}`;
+  `${p.display}${p.tier === 'expert' ? '' : ` ${categoryLabel(p.kind)}`}${p.reduced ? ' [reduced]' : ''}`;
 
 /** The voiced (ascending, root-seated) MIDI of the last note in `notes`. */
 const lastVoiced = (notes: number[]): number => {
@@ -79,6 +82,14 @@ export function startGame(root: HTMLElement): void {
     return Math.abs(ca.col - cb.col) + Math.abs(ca.row - cb.row) === 1;
   };
 
+  // For rootless voicings (Expert; R absent), ground the notes/chord with the
+  // player's implied root in the bass voice (docs/07 §4). No-op for rooted patterns.
+  const rootlessBass = (notes: number[], when = 0): void => {
+    const iv = puzzle.pattern.intervals;
+    if (iv.includes(0) || notes.length === 0) return;
+    audio.playRootBass(notes[0]! - iv[0]!, notes, when);
+  };
+
   // Sync both views to the current selection: grid selected/clickable/start,
   // path line, and the target's satisfied diamonds + pink line (incremental).
   const updateHighlights = (): void => {
@@ -113,6 +124,7 @@ export function startGame(root: HTMLElement): void {
             // voice the candidate as the next note of the prospective sequence
             const seq = [...selection.map((c) => noteOf.get(c)!), noteOf.get(id)!];
             audio.playNoteMidi(lastVoiced(seq));
+            rootlessBass(seq); // + the implied root, if this is a rootless voicing
           } // non-adjacent → no sound
         }
         onTap(id);
@@ -180,6 +192,7 @@ export function startGame(root: HTMLElement): void {
     // Match the give-up gap between the final note and the chord: reveal waits one
     // arpeggio step (520ms) + 170ms after the last note ≈ 690ms.
     audio.playChord(selectedNotes, 0.69);
+    rootlessBass(selectedNotes, 0.69); // implied root under the chord (rootless only)
     solved += 1;
     shell.counterEl.textContent = `Solved: ${solved}`;
     setTimeout(nextPuzzle, 1450); // later chord → hold a bit longer before advancing
@@ -200,12 +213,17 @@ export function startGame(root: HTMLElement): void {
     path.forEach((_id, i) => {
       setTimeout(() => {
         selection = path.slice(0, i + 1);
-        audio.playNoteMidi(lastVoiced(selection.map((c) => noteOf.get(c)!)));
+        const notes = selection.map((c) => noteOf.get(c)!);
+        audio.playNoteMidi(lastVoiced(notes));
+        rootlessBass(notes); // + implied root (rootless only)
         updateHighlights();
       }, i * stepMs);
     });
     const arped = path.length * stepMs;
-    setTimeout(() => audio.playChord(puzzle.solutionNotes, 0.05), arped + 120); // then the chord
+    setTimeout(() => {
+      audio.playChord(puzzle.solutionNotes, 0.05); // then the chord
+      rootlessBass(puzzle.solutionNotes, 0.05);
+    }, arped + 120);
     setTimeout(nextPuzzle, arped + 4500); // ~3s extra pause to take it all in, then advance
   }
 

@@ -6,10 +6,10 @@
 
 import type { Fifths } from './theory';
 
-export type Tier = 'easy' | 'medium' | 'hard'; // 'expert' is a later build
+export type Tier = 'easy' | 'medium' | 'hard' | 'expert';
 export type Kind = 'interval' | 'triad' | 'chord';
 
-const TIER_RANK: Record<Tier, number> = { easy: 0, medium: 1, hard: 2 };
+const TIER_RANK: Record<Tier, number> = { easy: 0, medium: 1, hard: 2, expert: 3 };
 
 // The category word shown after the name. "Triad" is reserved for the four
 // classic triads; sus2/sus4 (and everything ≥4 notes) read as "Chord".
@@ -101,6 +101,77 @@ export const BANK: readonly Pattern[] = [
   { name: '7♯9', display: '7♯9', kind: 'chord', intervals: [R, M3, P5, m7, aug2], tier: 'hard' },
   { name: '7♯11', display: '7♯11', kind: 'chord', intervals: [R, M3, P5, m7, aug4], tier: 'hard' },
   { name: '7♭13', display: '7♭13', kind: 'chord', intervals: [R, M3, m7, m6], tier: 'hard' }, // 5th dropped (clash)
+
+  // ── EXPERT (adds) — docs/07-expert-mode.md ────────────────────────────
+  // Extended-chord shells: reduced 4-note voicings (root-position, [reduced]).
+  { name: 'dom9-shell', display: 'Dominant 9th', kind: 'chord', intervals: [R, M3, m7, M2], tier: 'expert', reduced: true },
+  { name: 'dom13-shell', display: 'Dominant 13th', kind: 'chord', intervals: [R, M3, m7, M6], tier: 'expert', reduced: true },
+  { name: 'dom7♭9-shell', display: '7♭9', kind: 'chord', intervals: [R, M3, m7, m2], tier: 'expert', reduced: true },
+  { name: 'dom7♯9-shell', display: '7♯9', kind: 'chord', intervals: [R, M3, m7, aug2], tier: 'expert', reduced: true },
+  { name: 'dom7♯11-shell', display: '7♯11', kind: 'chord', intervals: [R, M3, m7, aug4], tier: 'expert', reduced: true },
+  { name: 'maj9-shell', display: 'Major 9th', kind: 'chord', intervals: [R, M3, M7, M2], tier: 'expert', reduced: true },
+  { name: 'maj13-shell', display: 'Major 13th', kind: 'chord', intervals: [R, M3, M7, M6], tier: 'expert', reduced: true },
+  { name: 'maj7♯11-shell', display: 'Major 7♯11', kind: 'chord', intervals: [R, M3, M7, aug4], tier: 'expert', reduced: true },
+  { name: 'min9-shell', display: 'Minor 9th', kind: 'chord', intervals: [R, m3, m7, M2], tier: 'expert', reduced: true },
+  { name: 'min11-shell', display: 'Minor 11th', kind: 'chord', intervals: [R, m3, m7, P4], tier: 'expert', reduced: true },
+  { name: 'min13-shell', display: 'Minor 13th', kind: 'chord', intervals: [R, m3, m7, M6], tier: 'expert', reduced: true },
+  // Rooted 5-less shells: root + guide-tones / 3–6, both orders ([reduced]).
+  { name: 'dom7-37', display: 'Dominant 7th', kind: 'chord', intervals: [R, M3, m7], tier: 'expert', reduced: true },
+  { name: 'dom7-73', display: 'Dominant 7th', kind: 'chord', intervals: [R, m7, M3], tier: 'expert', reduced: true },
+  { name: 'min7-37', display: 'Minor 7th', kind: 'chord', intervals: [R, m3, m7], tier: 'expert', reduced: true },
+  { name: 'min7-73', display: 'Minor 7th', kind: 'chord', intervals: [R, m7, m3], tier: 'expert', reduced: true },
+  { name: 'maj7-37', display: 'Major 7th', kind: 'chord', intervals: [R, M3, M7], tier: 'expert', reduced: true },
+  { name: 'maj7-73', display: 'Major 7th', kind: 'chord', intervals: [R, M7, M3], tier: 'expert', reduced: true },
+  { name: 'maj6-36', display: 'Major 6th', kind: 'chord', intervals: [R, M3, M6], tier: 'expert', reduced: true },
+  { name: 'maj6-63', display: 'Major 6th', kind: 'chord', intervals: [R, M6, M3], tier: 'expert', reduced: true },
+  { name: 'min6-36', display: 'Minor 6th', kind: 'chord', intervals: [R, m3, M6], tier: 'expert', reduced: true },
+  { name: 'min6-63', display: 'Minor 6th', kind: 'chord', intervals: [R, M6, m3], tier: 'expert', reduced: true },
+  // Root-position jazz colors.
+  { name: 'min-maj7', display: 'Minor-major 7th', kind: 'chord', intervals: [R, m3, P5, M7], tier: 'expert' },
+  { name: 'maj7♯5', display: 'Major 7♯5', kind: 'chord', intervals: [R, M3, aug5, M7], tier: 'expert' },
+  { name: '7♯5', display: '7♯5', kind: 'chord', intervals: [R, M3, aug5, m7], tier: 'expert' },
+  { name: '7♭5', display: '7♭5', kind: 'chord', intervals: [R, M3, dim5, m7], tier: 'expert' },
+  { name: '7♯9♭13', display: '7♯9♭13', kind: 'chord', intervals: [R, M3, m7, aug2, m6], tier: 'expert' },
+  { name: '7♭9♭13', display: '7♭9♭13', kind: 'chord', intervals: [R, M3, m7, m2, m6], tier: 'expert' },
+  { name: '7♭9♯11', display: '7♭9♯11', kind: 'chord', intervals: [R, M3, m7, m2, aug4], tier: 'expert' },
+  { name: '7♯9♯11', display: '7♯9♯11', kind: 'chord', intervals: [R, M3, m7, aug2, aug4], tier: 'expert' },
+  { name: 'quartal', display: 'Quartal', kind: 'chord', intervals: [R, P4, m7, m3], tier: 'expert' },
+  { name: 'quintal', display: 'Quintal', kind: 'chord', intervals: [R, P5, M2, M6], tier: 'expert' },
+  { name: '7sus4', display: '7sus4', kind: 'chord', intervals: [R, P4, P5, m7], tier: 'expert' },
+  { name: '13sus4', display: '13sus4', kind: 'chord', intervals: [R, P4, m7, M2, M6], tier: 'expert' },
+  // Triad inversions ⟂ (off-root; kind chord, not 'triad').
+  { name: 'maj-inv1', display: 'Major Triad (1st inv)', kind: 'chord', intervals: [M3, P5, R], tier: 'expert' },
+  { name: 'maj-inv2', display: 'Major Triad (2nd inv)', kind: 'chord', intervals: [P5, R, M3], tier: 'expert' },
+  { name: 'min-inv1', display: 'Minor Triad (1st inv)', kind: 'chord', intervals: [m3, P5, R], tier: 'expert' },
+  { name: 'min-inv2', display: 'Minor Triad (2nd inv)', kind: 'chord', intervals: [P5, R, m3], tier: 'expert' },
+  { name: 'dim-inv1', display: 'Diminished Triad (1st inv)', kind: 'chord', intervals: [m3, dim5, R], tier: 'expert' },
+  { name: 'dim-inv2', display: 'Diminished Triad (2nd inv)', kind: 'chord', intervals: [dim5, R, m3], tier: 'expert' },
+  { name: 'aug-inv1', display: 'Augmented Triad (1st inv)', kind: 'chord', intervals: [M3, aug5, R], tier: 'expert' },
+  { name: 'aug-inv2', display: 'Augmented Triad (2nd inv)', kind: 'chord', intervals: [aug5, R, M3], tier: 'expert' },
+  // Triad 5–3–R re-voicings ⟂ (fifth-bottom, root-top).
+  { name: 'maj-53r', display: 'Major Triad (5–3–R)', kind: 'chord', intervals: [P5, M3, R], tier: 'expert' },
+  { name: 'min-53r', display: 'Minor Triad (5–3–R)', kind: 'chord', intervals: [P5, m3, R], tier: 'expert' },
+  { name: 'dim-53r', display: 'Diminished Triad (5–3–R)', kind: 'chord', intervals: [dim5, m3, R], tier: 'expert' },
+  { name: 'aug-53r', display: 'Augmented Triad (5–3–R)', kind: 'chord', intervals: [aug5, M3, R], tier: 'expert' },
+  // Rootless guide-tone dyads ⟂ (both orders).
+  { name: 'gt-dom-37', display: 'Dominant guide tones', kind: 'interval', intervals: [M3, m7], tier: 'expert' },
+  { name: 'gt-dom-73', display: 'Dominant guide tones', kind: 'interval', intervals: [m7, M3], tier: 'expert' },
+  { name: 'gt-min-37', display: 'Minor guide tones', kind: 'interval', intervals: [m3, m7], tier: 'expert' },
+  { name: 'gt-min-73', display: 'Minor guide tones', kind: 'interval', intervals: [m7, m3], tier: 'expert' },
+  { name: 'gt-maj-37', display: 'Major guide tones', kind: 'interval', intervals: [M3, M7], tier: 'expert' },
+  { name: 'gt-maj-73', display: 'Major guide tones', kind: 'interval', intervals: [M7, M3], tier: 'expert' },
+  // Rootless 3–6 dyads ⟂ (both orders).
+  { name: 'd36-maj', display: 'Major 6th (3–6)', kind: 'interval', intervals: [M3, M6], tier: 'expert' },
+  { name: 'd36-maj-r', display: 'Major 6th (3–6)', kind: 'interval', intervals: [M6, M3], tier: 'expert' },
+  { name: 'd36-min', display: 'Minor 6th (3–6)', kind: 'interval', intervals: [m3, M6], tier: 'expert' },
+  { name: 'd36-min-r', display: 'Minor 6th (3–6)', kind: 'interval', intervals: [M6, m3], tier: 'expert' },
+  // Rootless 4-note A/B voicings ⟂.
+  { name: 'min9-rlA', display: 'Minor 9th (rootless A)', kind: 'chord', intervals: [m3, P5, m7, M2], tier: 'expert' },
+  { name: 'min9-rlB', display: 'Minor 9th (rootless B)', kind: 'chord', intervals: [m7, M2, m3, P5], tier: 'expert' },
+  { name: 'dom13-rlA', display: 'Dominant 13th (rootless A)', kind: 'chord', intervals: [M3, M6, m7, M2], tier: 'expert' },
+  { name: 'dom13-rlB', display: 'Dominant 13th (rootless B)', kind: 'chord', intervals: [m7, M2, M3, M6], tier: 'expert' },
+  { name: 'maj9-rlA', display: 'Major 9th (rootless A)', kind: 'chord', intervals: [M3, P5, M7, M2], tier: 'expert' },
+  { name: 'maj9-rlB', display: 'Major 9th (rootless B)', kind: 'chord', intervals: [M7, M2, M3, P5], tier: 'expert' },
 ];
 
 /** Patterns available at `tier` (cumulative: easy ⊂ medium ⊂ hard). */
