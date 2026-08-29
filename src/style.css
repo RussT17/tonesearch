@@ -200,7 +200,7 @@ body {
 /* --- Give Up: a puzzle control — under the sequence name, fades with the band --- */
 .giveup {
   display: block;
-  margin: 1.15rem auto 0;
+  margin: 2rem auto 0; /* separate Give Up from the label/tokens/name group above */
   font: inherit;
   font-size: 0.9rem;
   color: var(--text-dim);
