@@ -213,7 +213,18 @@ Web Audio API, synthesized (no samples).
 - **Layout:** top bar (difficulty selector + **solved-this-session counter**);
   center (the grid); below it (the target sequence as **puzzle-style diamonds**,
   e.g. `R m3 P5 m7`, highlighted incrementally with the same pink path line as the
-  grid as the player selects — see §5).
+  grid as the player selects — see §5). **Give Up** sits under the sequence name
+  (a puzzle control, fading with the puzzle on transition); **mute** and the
+  **install** affordance are borderless icons pinned to the bottom corners
+  (app-level chrome).
+- **Vertical placement [v2]:** the area between the top bar and the bottom holds
+  two stacked, each-centered blocks — a **grid zone** (top) and a fixed-size
+  **target group** (label + diamonds + name + Give Up) below it — with a flexible
+  **bottom spacer** pulling both upward off the bottom edge. Only the **grid**
+  scales to fit its zone (never exceeding the per-diamond cap); the **target group
+  is the same size and vertical position on every puzzle**. The grid-zone : spacer
+  ratio [param] sets how high everything floats (start 2:1 → grid center ≈ ⅓, target
+  center ≈ ⅔ of the area).
 - **Sequence name [v2]:** each puzzle shows its pattern's human name (e.g.
   "Dominant 7th", "Major third") near the target diamonds — **always visible but
   subtle**, so a player who wants to name the chord themselves first can mentally

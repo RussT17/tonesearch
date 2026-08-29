@@ -75,7 +75,10 @@ export function mountShell(root: HTMLElement): Shell {
   stageEl.setAttribute('aria-label', 'Note grid');
   tokensEl.setAttribute('aria-label', 'Target intervals');
 
-  root.append(topbar, stageEl, tokensBand, installBtn, muteBtn);
+  // Flexible bottom spacer: pulls the grid + target group upward (see §7 layout).
+  const footSpacer = el('div', 'foot-spacer');
+
+  root.append(topbar, stageEl, tokensBand, footSpacer, installBtn, muteBtn);
   return { difficultyEl, counterEl, stageEl, gridEl, tokensEl, bandEl: tokensBand, nameEl, installBtn, giveUpBtn, muteBtn };
 }
 

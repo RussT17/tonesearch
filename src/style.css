@@ -98,12 +98,18 @@ body {
    it, so they sit midway between the grid and the controls instead of hugging
    the grid on tall puzzles. */
 .tokens-band {
-  flex: 1;
+  flex: 0 0 auto; /* fixed-size target group (same on every puzzle) */
   min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+/* pulls the grid + target group up, keeping the target off the bottom edge.
+   grid-zone(.stage flex:2) : this spacer sets how high everything floats. */
+.foot-spacer {
+  flex: 1 1 0;
+  min-height: 0;
 }
 .grid {
   position: relative;
