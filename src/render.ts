@@ -224,7 +224,7 @@ export interface TokenView {
 }
 
 const TOKEN_REF_LEN = 5; // size the target row to fit up to this many (future 5-note chords)
-const TOKEN_PITCH_MAX = 130; // cap on center-to-center spacing (keeps desktop sane)
+const TOKEN_PITCH_MAX = 78; // fixed target-diamond size (matches a phone; caps desktop)
 
 /**
  * Center-to-center spacing for the target diamonds — sized so REF_LEN of them

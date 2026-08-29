@@ -123,10 +123,13 @@ export function startGame(root: HTMLElement): void {
   const layout = (): void => {
     // One shared pitch drives both: target diamonds sized to fit up to 5, and
     // the grid capped at pitch/2 so a puzzle diamond never exceeds a target one.
+    // Render the tokens FIRST so the band's height is settled before the grid is
+    // measured against the stage — otherwise a grid sized to the pre-band stage
+    // height can overflow down into the target row.
     const bandW = shell.tokensEl.parentElement?.clientWidth ?? window.innerWidth;
     const pitch = targetPitch(bandW - 24);
-    view = renderGrid(shell.stageEl, shell.gridEl, puzzle, pitch / 2);
     tokenView = renderTokens(shell.tokensEl, puzzle, pitch);
+    view = renderGrid(shell.stageEl, shell.gridEl, puzzle, pitch / 2);
     wireCells();
     updateHighlights();
   };
