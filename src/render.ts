@@ -9,6 +9,12 @@ import { intervalName, noteName } from './theory';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const CELL_FILL = 0.9; // diamond side vs. edge-touching size (leaves a thin gap)
 
+// Mono (currentColor) download glyph for the Install pill.
+const ICON_INSTALL =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+  '<path d="M12 3v10m0 0l-3.5-3.5M12 13l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' +
+  '<path d="M5 20h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+
 export interface Shell {
   difficultyEl: HTMLSelectElement;
   counterEl: HTMLElement;
@@ -17,6 +23,7 @@ export interface Shell {
   tokensEl: HTMLElement;
   bandEl: HTMLElement; // the whole target band (label + tokens + name), for fading
   nameEl: HTMLElement;
+  installBtn: HTMLButtonElement;
   giveUpBtn: HTMLButtonElement;
   muteBtn: HTMLButtonElement;
 }
@@ -54,16 +61,21 @@ export function mountShell(root: HTMLElement): Shell {
   tokensBand.append(tokensLabel, tokensEl, nameEl);
 
   const controls = el('div', 'controls');
+  // Install pill (left corner) — hidden until the browser says the app is
+  // installable (game.ts wires beforeinstallprompt); Give Up stays centered.
+  const installBtn = el<HTMLButtonElement>('button', 'install');
+  installBtn.innerHTML = `${ICON_INSTALL}<span>Install</span>`;
+  installBtn.setAttribute('aria-label', 'Install app');
   const giveUpBtn = el<HTMLButtonElement>('button', 'giveup', 'Give Up');
   giveUpBtn.setAttribute('aria-label', 'Give up and reveal the answer');
-  const muteBtn = el<HTMLButtonElement>('button', 'mute', '🔊');
+  const muteBtn = el<HTMLButtonElement>('button', 'mute'); // mono icon set by game.paintMute
   muteBtn.setAttribute('aria-label', 'Mute');
-  controls.append(giveUpBtn, muteBtn);
+  controls.append(installBtn, giveUpBtn, muteBtn); // grid columns: install | give up | mute
   stageEl.setAttribute('aria-label', 'Note grid');
   tokensEl.setAttribute('aria-label', 'Target intervals');
 
   root.append(topbar, stageEl, tokensBand, controls);
-  return { difficultyEl, counterEl, stageEl, gridEl, tokensEl, bandEl: tokensBand, nameEl, giveUpBtn, muteBtn };
+  return { difficultyEl, counterEl, stageEl, gridEl, tokensEl, bandEl: tokensBand, nameEl, installBtn, giveUpBtn, muteBtn };
 }
 
 /** References to the rendered grid, so input/game can drive it. */

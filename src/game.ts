@@ -44,6 +44,22 @@ const lastVoiced = (notes: number[]): number => {
   return v[v.length - 1]!;
 };
 
+// Mono (currentColor) speaker icons for the mute toggle.
+const SPEAKER_BODY = '<path d="M3 10v4a1 1 0 0 0 1 1h3l4 4V5L7 9H4a1 1 0 0 0-1 1z" fill="currentColor"/>';
+const ICON_SOUND_ON =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + SPEAKER_BODY +
+  '<path d="M15.5 9a4 4 0 0 1 0 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>' +
+  '<path d="M18 6.5a8 8 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+const ICON_SOUND_OFF =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + SPEAKER_BODY +
+  '<path d="M15.5 9.5l5 5M20.5 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+
+/** The `beforeinstallprompt` event (not in the standard DOM lib types). */
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 export function startGame(root: HTMLElement): void {
   const shell: Shell = mountShell(root);
 
@@ -223,11 +239,36 @@ export function startGame(root: HTMLElement): void {
   };
 
   const paintMute = (m: boolean): void => {
-    shell.muteBtn.textContent = m ? '🔇' : '🔊';
+    shell.muteBtn.innerHTML = m ? ICON_SOUND_OFF : ICON_SOUND_ON;
     shell.muteBtn.setAttribute('aria-label', m ? 'Unmute' : 'Mute');
   };
   shell.muteBtn.onclick = () => paintMute(audio.toggleMuted());
   paintMute(audio.isMuted());
+
+  // PWA install: suppress Chrome's automatic prompt and expose our own corner
+  // button instead, shown only while the app is installable (i.e. not already
+  // installed — the event stops firing once installed / when run standalone).
+  let deferredPrompt: BeforeInstallPromptEvent | null = null;
+  const standalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (navigator as unknown as { standalone?: boolean }).standalone === true;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault(); // no auto mini-infobar; we drive it from the button
+    deferredPrompt = e as BeforeInstallPromptEvent;
+    if (!standalone) shell.installBtn.classList.add('show');
+  });
+  shell.installBtn.onclick = () => {
+    if (!deferredPrompt) return;
+    void deferredPrompt.prompt();
+    void deferredPrompt.userChoice.finally(() => {
+      deferredPrompt = null;
+      shell.installBtn.classList.remove('show'); // one-shot; hide after the choice
+    });
+  };
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    shell.installBtn.classList.remove('show');
+  });
   window.addEventListener('resize', () => {
     if (phase === 'playing') layout();
   });
