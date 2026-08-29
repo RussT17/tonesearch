@@ -324,7 +324,7 @@ export function startGame(root: HTMLElement): void {
     title.textContent = 'ToneSearch';
     const sub = document.createElement('div');
     sub.className = 'start-sub';
-    sub.textContent = 'Find the interval sequence in the grid';
+    sub.textContent = 'Find the interval sequence in the grid.';
     // Play button as a widened diamond (hexagon: left/right points + flat
     // top/bottom edges), styled like a lit target diamond with the word inside.
     const btn = document.createElement('button');

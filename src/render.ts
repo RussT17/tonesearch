@@ -103,10 +103,12 @@ export function renderGrid(
   const cells = puzzle.cells;
 
   // Footprint in unit spacing, then choose pixel spacing s to fit the stage,
-  // capped at maxS so a puzzle diamond never exceeds a target diamond.
+  // capped at maxS so a puzzle diamond never exceeds a target diamond. The
+  // vertical inset is larger so a tall grid keeps a small spacer above/below
+  // (doesn't crowd the top bar or the target row).
   const box = footprint(cells, 1);
   const availW = Math.max(stageEl.clientWidth - 16, 120);
-  const availH = Math.max(stageEl.clientHeight - 16, 120);
+  const availH = Math.max(stageEl.clientHeight - 64, 120); // ~32px spacer above/below a tall grid
   let s = Math.min(availW / box.width, availH / box.height);
   if (maxS !== undefined) s = Math.min(s, maxS);
 
