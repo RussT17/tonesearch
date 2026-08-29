@@ -220,17 +220,44 @@ export function startGame(root: HTMLElement): void {
 
   shell.giveUpBtn.onclick = reveal;
 
+  // Size the borderless dropdown to its current word so the caret trails the word
+  // by a fixed gap (a native select would otherwise size to the widest option).
+  const sizeDifficulty = (): void => {
+    const s = shell.difficultyEl;
+    const cs = getComputedStyle(s);
+    const span = document.createElement('span');
+    span.style.position = 'absolute';
+    span.style.visibility = 'hidden';
+    span.style.whiteSpace = 'pre';
+    span.style.fontFamily = cs.fontFamily;
+    span.style.fontSize = cs.fontSize;
+    span.style.fontWeight = cs.fontWeight;
+    span.style.fontStyle = cs.fontStyle;
+    span.style.letterSpacing = cs.letterSpacing;
+    span.style.textTransform = cs.textTransform;
+    span.textContent = s.options[s.selectedIndex]?.text ?? '';
+    document.body.appendChild(span);
+    const wordW = span.offsetWidth;
+    span.remove();
+    const padL = parseFloat(cs.paddingLeft) || 0;
+    const padR = parseFloat(cs.paddingRight) || 0;
+    s.style.width = `${Math.ceil(wordW + padL + padR)}px`;
+  };
+
   // Difficulty dropdown: reflect the loaded tier; on change, start a fresh puzzle.
   shell.difficultyEl.value = tier;
+  sizeDifficulty();
   shell.difficultyEl.onchange = (): void => {
-    shell.difficultyEl.blur(); // drop focus so the pill doesn't stay highlighted
+    shell.difficultyEl.blur(); // drop focus so nothing stays highlighted
     if (phase !== 'playing') {
       shell.difficultyEl.value = tier; // ignore changes mid-solve/reveal; keep in sync
+      sizeDifficulty();
       return;
     }
     const v = shell.difficultyEl.value;
     if (!isTier(v)) return;
     tier = v;
+    sizeDifficulty(); // caret follows the new word
     try {
       localStorage.setItem(TIER_KEY, tier);
     } catch {
