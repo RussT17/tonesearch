@@ -57,24 +57,25 @@ export function mountShell(root: HTMLElement): Shell {
   const tokensLabel = el('div', 'tokens-label', 'Find this sequence');
   const tokensEl = el('div', 'tokens');
   const nameEl = el('div', 'seq-name'); // subtle chord/interval name (always visible)
+  // Give Up belongs to the current puzzle → sits under the name inside the band,
+  // so it fades out/in with the rest of the puzzle on transition.
+  const giveUpBtn = el<HTMLButtonElement>('button', 'giveup', 'Give Up');
+  giveUpBtn.setAttribute('aria-label', 'Give up and reveal the answer');
   const tokensBand = el('div', 'tokens-band');
-  tokensBand.append(tokensLabel, tokensEl, nameEl);
+  tokensBand.append(tokensLabel, tokensEl, nameEl, giveUpBtn);
 
-  const controls = el('div', 'controls');
-  // Install pill (left corner) — hidden until the browser says the app is
-  // installable (game.ts wires beforeinstallprompt); Give Up stays centered.
+  // App-level chrome: borderless, pinned to the screen corners (low prominence).
+  // Install (left) is hidden until the browser says the app is installable
+  // (game.ts wires beforeinstallprompt).
   const installBtn = el<HTMLButtonElement>('button', 'install');
   installBtn.innerHTML = `${ICON_INSTALL}<span>Install</span>`;
   installBtn.setAttribute('aria-label', 'Install app');
-  const giveUpBtn = el<HTMLButtonElement>('button', 'giveup', 'Give Up');
-  giveUpBtn.setAttribute('aria-label', 'Give up and reveal the answer');
   const muteBtn = el<HTMLButtonElement>('button', 'mute'); // mono icon set by game.paintMute
   muteBtn.setAttribute('aria-label', 'Mute');
-  controls.append(installBtn, giveUpBtn, muteBtn); // grid columns: install | give up | mute
   stageEl.setAttribute('aria-label', 'Note grid');
   tokensEl.setAttribute('aria-label', 'Target intervals');
 
-  root.append(topbar, stageEl, tokensBand, controls);
+  root.append(topbar, stageEl, tokensBand, installBtn, muteBtn);
   return { difficultyEl, counterEl, stageEl, gridEl, tokensEl, bandEl: tokensBand, nameEl, installBtn, giveUpBtn, muteBtn };
 }
 
