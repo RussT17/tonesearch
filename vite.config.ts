@@ -16,7 +16,9 @@ export default defineConfig({
       injectRegister: 'auto',
       manifest: false,
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
+        // precache only the runtime shell; the icon PNGs are launcher assets
+        // (cached by the OS at install time), not needed for offline play.
+        globPatterns: ['**/*.{js,css,html,svg,webmanifest}'],
         navigateFallback: '/tonesearch/index.html',
         cleanupOutdatedCaches: true,
       },
