@@ -11,10 +11,24 @@ import type { Fifths } from './theory';
 const MUTE_KEY = 'tonesearch.muted';
 const BASE_MIDI = 60; // C4 — the fixed reference octave (docs §6/E3)
 
-const VOICE = { type: 'triangle' as OscillatorType, attack: 0.02, decay: 0.6 };
+const VOICE = { type: 'triangle' as OscillatorType, attack: 0.02, decay: 0.75 };
 // A distinct, rounder bass voice for the implied root under rootless voicings
-// (Expert) — sounds like a bassist grounding the chord (docs/07 §4).
-const BASS = { type: 'sine' as OscillatorType, peak: 0.16, decay: 0.85 };
+// (Expert) — sounds like a bassist grounding the chord (docs/07 §4). A warm
+// custom waveform (fundamental + gently decreasing harmonics, built lazily in
+// `bassVoice`) so the low pitch carries on small phone speakers — richer and
+// more present than a pure sine, without a sawtooth's buzz.
+const BASS = { peak: 0.2, decay: 1.06 };
+
+// Harmonic amplitudes (index 0 = DC, 1 = fundamental, …) for the bass timbre.
+const BASS_HARMONICS = [0, 1, 0.5, 0.32, 0.18, 0.1];
+let bassWave: PeriodicWave | null = null;
+function bassVoice(c: AudioContext): PeriodicWave {
+  if (!bassWave) {
+    const imag = new Float32Array(BASS_HARMONICS);
+    bassWave = c.createPeriodicWave(new Float32Array(imag.length), imag);
+  }
+  return bassWave;
+}
 
 // Octave-seating for sequences: each sequence's ROOT is placed at whichever
 // octave of its pitch class sits closest to `anchorMidi` (tie → the lower one),
@@ -153,13 +167,14 @@ function playFreq(
   when: number,
   peak: number,
   decay = VOICE.decay,
-  oscType: OscillatorType = VOICE.type,
+  wave: OscillatorType | PeriodicWave = VOICE.type,
 ): void {
   if (!clockLive(c)) return; // drop rather than queue against a frozen clock
   const t0 = c.currentTime + when;
   const osc = c.createOscillator();
   const gain = c.createGain();
-  osc.type = oscType;
+  if (wave instanceof PeriodicWave) osc.setPeriodicWave(wave);
+  else osc.type = wave;
   osc.frequency.value = freq;
   gain.gain.setValueAtTime(0.0001, t0);
   gain.gain.exponentialRampToValueAtTime(peak, t0 + VOICE.attack);
@@ -256,5 +271,5 @@ export function playRootBass(
 ): void {
   if (muted || notes.length === 0) return;
   const freq = midiToFreq(bassMidi(rootFifths, notes));
-  whenRunning((c) => playFreq(c, freq, when, BASS.peak, decay, BASS.type));
+  whenRunning((c) => playFreq(c, freq, when, BASS.peak, decay, bassVoice(c)));
 }
