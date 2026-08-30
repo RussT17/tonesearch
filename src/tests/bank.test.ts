@@ -35,11 +35,11 @@ describe('bank integrity', () => {
     expect(bankForTier('expert').some((p) => p.intervals[0] !== 0)).toBe(true); // inversions/rootless
   });
 
-  it('the Hard-and-below "reduced" qualifier set is exactly {dom13, maj13, min13, min11}', () => {
-    const reduced = new Set(
-      bankForTier('hard').filter((p) => p.qualifier === 'reduced').map((p) => p.name),
+  it('the Hard-and-below "no 5" qualifier set is exactly {dom13, maj13, min13, min11}', () => {
+    const noFifth = new Set(
+      bankForTier('hard').filter((p) => p.qualifier === 'no 5').map((p) => p.name),
     );
-    expect(reduced).toEqual(new Set(['dom13', 'maj13', 'min13', 'min11']));
+    expect(noFifth).toEqual(new Set(['dom13', 'maj13', 'min13', 'min11']));
   });
 
   it('bankForTier is cumulative (easy ⊂ medium ⊂ hard ⊂ expert)', () => {

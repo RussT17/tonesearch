@@ -1,10 +1,11 @@
 // bank.ts — the curated pattern bank as data (docs/05, 07). A Pattern is an
 // ordered list of intervals (fifths from root), plus a display name, its category
 // (interval/triad/chord), the minimum cumulative tier, and an optional freeform
-// `qualifier` shown in parentheses (voicing note: reduced / shell / 1st inversion
-// / rootless A …). Naming rule (docs/08): chords use jazz shorthand UNLESS that
-// shorthand is a bare number (7, 9, 13, 6) or is dim7, which are spelled out;
-// triads and intervals are spelled.
+// `qualifier` shown in parentheses (voicing note: no 5 / shell / 1st inversion
+// / rootless A …). Naming rule (docs/08): count the numbers in a chord's jazz
+// shorthand — one number → spell it out ("Minor 9th", "Dominant 7th"); two or
+// more → keep the shorthand ("m7♭5", "6/9", "7♭9", "9sus4"). sus/add chords keep
+// their idiomatic shorthand. Triads and intervals are always spelled.
 
 import type { Fifths } from './theory';
 
@@ -61,12 +62,12 @@ export const BANK: readonly Pattern[] = [
   { name: 'aug', display: 'Augmented', kind: 'triad', intervals: [R, M3, aug5], tier: 'medium' },
   { name: 'sus2', display: 'sus2', kind: 'chord', intervals: [R, M2, P5], tier: 'medium' },
   { name: 'sus4', display: 'sus4', kind: 'chord', intervals: [R, P4, P5], tier: 'medium' },
-  { name: 'min7', display: 'm7', kind: 'chord', intervals: [R, m3, P5, m7], tier: 'medium' },
-  { name: 'maj7', display: 'maj7', kind: 'chord', intervals: [R, M3, P5, M7], tier: 'medium' },
+  { name: 'min7', display: 'Minor 7th', kind: 'chord', intervals: [R, m3, P5, m7], tier: 'medium' },
+  { name: 'maj7', display: 'Major 7th', kind: 'chord', intervals: [R, M3, P5, M7], tier: 'medium' },
   { name: 'dom7', display: 'Dominant 7th', kind: 'chord', intervals: [R, M3, P5, m7], tier: 'medium' },
   { name: 'maj6', display: 'Major 6th', kind: 'chord', intervals: [R, M3, P5, M6], tier: 'medium' },
-  { name: 'min6', display: 'm6', kind: 'chord', intervals: [R, m3, P5, M6], tier: 'medium' },
-  { name: 'min♭6', display: 'm♭6', kind: 'chord', intervals: [R, m3, P5, m6], tier: 'medium' },
+  { name: 'min6', display: 'Minor 6th', kind: 'chord', intervals: [R, m3, P5, M6], tier: 'medium' },
+  { name: 'min♭6', display: 'Minor ♭6', kind: 'chord', intervals: [R, m3, P5, m6], tier: 'medium' },
   { name: 'm7♭5', display: 'm7♭5', kind: 'chord', intervals: [R, m3, dim5, m7], tier: 'medium' },
 
   // ── HARD (adds) ───────────────────────────────────────────────────────
@@ -78,14 +79,14 @@ export const BANK: readonly Pattern[] = [
   { name: 'madd9', display: 'm add9', kind: 'chord', intervals: [R, m3, P5, M2], tier: 'hard' },
   { name: '6/9', display: '6/9', kind: 'chord', intervals: [R, M3, P5, M6, M2], tier: 'hard' },
   { name: 'm6/9', display: 'm6/9', kind: 'chord', intervals: [R, m3, P5, M6, M2], tier: 'hard' },
-  { name: 'maj9', display: 'maj9', kind: 'chord', intervals: [R, M3, P5, M7, M2], tier: 'hard' },
+  { name: 'maj9', display: 'Major 9th', kind: 'chord', intervals: [R, M3, P5, M7, M2], tier: 'hard' },
   { name: 'dom9', display: 'Dominant 9th', kind: 'chord', intervals: [R, M3, P5, m7, M2], tier: 'hard' },
-  { name: 'min9', display: 'm9', kind: 'chord', intervals: [R, m3, P5, m7, M2], tier: 'hard' },
-  { name: 'min11', display: 'm11', kind: 'chord', intervals: [R, m3, m7, M2, P4], tier: 'hard', qualifier: 'reduced' },
+  { name: 'min9', display: 'Minor 9th', kind: 'chord', intervals: [R, m3, P5, m7, M2], tier: 'hard' },
+  { name: 'min11', display: 'Minor 11th', kind: 'chord', intervals: [R, m3, m7, M2, P4], tier: 'hard', qualifier: 'no 5' },
   { name: '9sus4', display: '9sus4', kind: 'chord', intervals: [R, P4, P5, m7, M2], tier: 'hard' },
-  { name: 'dom13', display: 'Dominant 13th', kind: 'chord', intervals: [R, M3, m7, M2, M6], tier: 'hard', qualifier: 'reduced' },
-  { name: 'maj13', display: 'maj13', kind: 'chord', intervals: [R, M3, M7, M2, M6], tier: 'hard', qualifier: 'reduced' },
-  { name: 'min13', display: 'm13', kind: 'chord', intervals: [R, m3, m7, M2, M6], tier: 'hard', qualifier: 'reduced' },
+  { name: 'dom13', display: 'Dominant 13th', kind: 'chord', intervals: [R, M3, m7, M2, M6], tier: 'hard', qualifier: 'no 5' },
+  { name: 'maj13', display: 'Major 13th', kind: 'chord', intervals: [R, M3, M7, M2, M6], tier: 'hard', qualifier: 'no 5' },
+  { name: 'min13', display: 'Minor 13th', kind: 'chord', intervals: [R, m3, m7, M2, M6], tier: 'hard', qualifier: 'no 5' },
   { name: '7♭9', display: '7♭9', kind: 'chord', intervals: [R, M3, P5, m7, m2], tier: 'hard' },
   { name: '7♯9', display: '7♯9', kind: 'chord', intervals: [R, M3, P5, m7, aug2], tier: 'hard' },
   { name: '7♯11', display: '7♯11', kind: 'chord', intervals: [R, M3, P5, m7, aug4], tier: 'hard' },
@@ -98,25 +99,25 @@ export const BANK: readonly Pattern[] = [
   { name: 'dom7♭9-shell', display: '7♭9', kind: 'chord', intervals: [R, M3, m7, m2], tier: 'expert', qualifier: 'shell' },
   { name: 'dom7♯9-shell', display: '7♯9', kind: 'chord', intervals: [R, M3, m7, aug2], tier: 'expert', qualifier: 'shell' },
   { name: 'dom7♯11-shell', display: '7♯11', kind: 'chord', intervals: [R, M3, m7, aug4], tier: 'expert', qualifier: 'shell' },
-  { name: 'maj9-shell', display: 'maj9', kind: 'chord', intervals: [R, M3, M7, M2], tier: 'expert', qualifier: 'shell' },
-  { name: 'maj13-shell', display: 'maj13', kind: 'chord', intervals: [R, M3, M7, M6], tier: 'expert', qualifier: 'shell' },
+  { name: 'maj9-shell', display: 'Major 9th', kind: 'chord', intervals: [R, M3, M7, M2], tier: 'expert', qualifier: 'shell' },
+  { name: 'maj13-shell', display: 'Major 13th', kind: 'chord', intervals: [R, M3, M7, M6], tier: 'expert', qualifier: 'shell' },
   { name: 'maj7♯11-shell', display: 'maj7♯11', kind: 'chord', intervals: [R, M3, M7, aug4], tier: 'expert', qualifier: 'shell' },
-  { name: 'min9-shell', display: 'm9', kind: 'chord', intervals: [R, m3, m7, M2], tier: 'expert', qualifier: 'shell' },
-  { name: 'min11-shell', display: 'm11', kind: 'chord', intervals: [R, m3, m7, P4], tier: 'expert', qualifier: 'shell' },
-  { name: 'min13-shell', display: 'm13', kind: 'chord', intervals: [R, m3, m7, M6], tier: 'expert', qualifier: 'shell' },
+  { name: 'min9-shell', display: 'Minor 9th', kind: 'chord', intervals: [R, m3, m7, M2], tier: 'expert', qualifier: 'shell' },
+  { name: 'min11-shell', display: 'Minor 11th', kind: 'chord', intervals: [R, m3, m7, P4], tier: 'expert', qualifier: 'shell' },
+  { name: 'min13-shell', display: 'Minor 13th', kind: 'chord', intervals: [R, m3, m7, M6], tier: 'expert', qualifier: 'shell' },
   // Rooted 5-less shells: root + guide-tones / 3–6, both orders.
   { name: 'dom7-37', display: 'Dominant 7th', kind: 'chord', intervals: [R, M3, m7], tier: 'expert', qualifier: '3–7' },
   { name: 'dom7-73', display: 'Dominant 7th', kind: 'chord', intervals: [R, m7, M3], tier: 'expert', qualifier: '7–3' },
-  { name: 'min7-37', display: 'm7', kind: 'chord', intervals: [R, m3, m7], tier: 'expert', qualifier: '3–7' },
-  { name: 'min7-73', display: 'm7', kind: 'chord', intervals: [R, m7, m3], tier: 'expert', qualifier: '7–3' },
-  { name: 'maj7-37', display: 'maj7', kind: 'chord', intervals: [R, M3, M7], tier: 'expert', qualifier: '3–7' },
-  { name: 'maj7-73', display: 'maj7', kind: 'chord', intervals: [R, M7, M3], tier: 'expert', qualifier: '7–3' },
+  { name: 'min7-37', display: 'Minor 7th', kind: 'chord', intervals: [R, m3, m7], tier: 'expert', qualifier: '3–7' },
+  { name: 'min7-73', display: 'Minor 7th', kind: 'chord', intervals: [R, m7, m3], tier: 'expert', qualifier: '7–3' },
+  { name: 'maj7-37', display: 'Major 7th', kind: 'chord', intervals: [R, M3, M7], tier: 'expert', qualifier: '3–7' },
+  { name: 'maj7-73', display: 'Major 7th', kind: 'chord', intervals: [R, M7, M3], tier: 'expert', qualifier: '7–3' },
   { name: 'maj6-36', display: 'Major 6th', kind: 'chord', intervals: [R, M3, M6], tier: 'expert', qualifier: '3–6' },
   { name: 'maj6-63', display: 'Major 6th', kind: 'chord', intervals: [R, M6, M3], tier: 'expert', qualifier: '6–3' },
-  { name: 'min6-36', display: 'm6', kind: 'chord', intervals: [R, m3, M6], tier: 'expert', qualifier: '3–6' },
-  { name: 'min6-63', display: 'm6', kind: 'chord', intervals: [R, M6, m3], tier: 'expert', qualifier: '6–3' },
+  { name: 'min6-36', display: 'Minor 6th', kind: 'chord', intervals: [R, m3, M6], tier: 'expert', qualifier: '3–6' },
+  { name: 'min6-63', display: 'Minor 6th', kind: 'chord', intervals: [R, M6, m3], tier: 'expert', qualifier: '6–3' },
   // Root-position jazz colors.
-  { name: 'min-maj7', display: 'm(maj7)', kind: 'chord', intervals: [R, m3, P5, M7], tier: 'expert' },
+  { name: 'min-maj7', display: 'Minor-major 7th', kind: 'chord', intervals: [R, m3, P5, M7], tier: 'expert' },
   { name: 'maj7♯5', display: 'maj7♯5', kind: 'chord', intervals: [R, M3, aug5, M7], tier: 'expert' },
   { name: '7♯5', display: '7♯5', kind: 'chord', intervals: [R, M3, aug5, m7], tier: 'expert' },
   { name: '7♭5', display: '7♭5', kind: 'chord', intervals: [R, M3, dim5, m7], tier: 'expert' },
@@ -156,12 +157,12 @@ export const BANK: readonly Pattern[] = [
   { name: 'd36-min', display: 'Augmented 4th', kind: 'interval', intervals: [m3, M6], tier: 'expert', qualifier: 'min 3–6' },
   { name: 'd36-min-r', display: 'Diminished 5th', kind: 'interval', intervals: [M6, m3], tier: 'expert', qualifier: 'min 3–6' },
   // Rootless 4-note A/B voicings ⟂.
-  { name: 'min9-rlA', display: 'm9', kind: 'chord', intervals: [m3, P5, m7, M2], tier: 'expert', qualifier: 'rootless A' },
-  { name: 'min9-rlB', display: 'm9', kind: 'chord', intervals: [m7, M2, m3, P5], tier: 'expert', qualifier: 'rootless B' },
+  { name: 'min9-rlA', display: 'Minor 9th', kind: 'chord', intervals: [m3, P5, m7, M2], tier: 'expert', qualifier: 'rootless A' },
+  { name: 'min9-rlB', display: 'Minor 9th', kind: 'chord', intervals: [m7, M2, m3, P5], tier: 'expert', qualifier: 'rootless B' },
   { name: 'dom13-rlA', display: 'Dominant 13th', kind: 'chord', intervals: [M3, M6, m7, M2], tier: 'expert', qualifier: 'rootless A' },
   { name: 'dom13-rlB', display: 'Dominant 13th', kind: 'chord', intervals: [m7, M2, M3, M6], tier: 'expert', qualifier: 'rootless B' },
-  { name: 'maj9-rlA', display: 'maj9', kind: 'chord', intervals: [M3, P5, M7, M2], tier: 'expert', qualifier: 'rootless A' },
-  { name: 'maj9-rlB', display: 'maj9', kind: 'chord', intervals: [M7, M2, M3, P5], tier: 'expert', qualifier: 'rootless B' },
+  { name: 'maj9-rlA', display: 'Major 9th', kind: 'chord', intervals: [M3, P5, M7, M2], tier: 'expert', qualifier: 'rootless A' },
+  { name: 'maj9-rlB', display: 'Major 9th', kind: 'chord', intervals: [M7, M2, M3, P5], tier: 'expert', qualifier: 'rootless B' },
 ];
 
 /** Patterns available at `tier` (cumulative: easy ⊂ medium ⊂ hard ⊂ expert). */

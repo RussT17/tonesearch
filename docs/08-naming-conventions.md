@@ -1,9 +1,13 @@
 # ToneSearch — Pattern Naming Conventions
 
 > **Status:** ✅ Implemented (2026-08-29). Codifies how a pattern's caption is
-> built. Owner's decisions: System B **except** bare-number shorthands (7/9/13/6)
-> and dim7 are spelled (§4); category word kept for all tiers; `qualifier` field
-> adopted; `△7/ø7/°7` deferred (§5).
+> built. **The rule (owner's):** count the numbers in a chord's jazz shorthand —
+> **one** number → spell it out ("Minor 9th", "Dominant 7th", "Diminished 7th");
+> **two or more** → keep the shorthand ("m7♭5", "6/9", "7♭9", "9sus4", "7♯9♭13").
+> sus/add chords keep their idiomatic shorthand (sus2, sus4, add9). Triads and
+> intervals are always spelled. Category word kept for all tiers; `qualifier`
+> field adopted (e.g. "no 5", "shell", "3–7", "1st inversion", "rootless A");
+> `△7/ø7/°7` deferred (§5).
 
 ## §0 — Constraints that shape naming
 
