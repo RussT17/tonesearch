@@ -20,9 +20,9 @@ const NOTE_NAMES: Record<number, string> = {
 };
 
 const INTERVAL_NAMES: Record<number, string> = {
-  [-9]: 'dim7', [-8]: 'dim4', [-7]: 'dimR', [-6]: 'dim5', [-5]: 'm2', [-4]: 'm6',
+  [-9]: 'd7', [-8]: 'd4', [-7]: 'dR', [-6]: 'd5', [-5]: 'm2', [-4]: 'm6',
   [-3]: 'm3', [-2]: 'm7', [-1]: 'P4', [0]: 'R', [1]: 'P5', [2]: 'M2', [3]: 'M6',
-  [4]: 'M3', [5]: 'M7', [6]: 'aug4', [7]: 'augR', [8]: 'aug5', [9]: 'aug2',
+  [4]: 'M3', [5]: 'M7', [6]: 'A4', [7]: 'AR', [8]: 'A5', [9]: 'A2',
 };
 
 describe('noteName', () => {
@@ -44,16 +44,16 @@ describe('noteName', () => {
 });
 
 describe('intervalName', () => {
-  it('matches the interval table aug2…dim7', () => {
+  it('matches the interval table A2…d7', () => {
     for (const [f, name] of Object.entries(INTERVAL_NAMES)) {
       expect(intervalName(Number(f))).toBe(name);
     }
   });
 
-  it('spells the unison specially (R / augR / dimR)', () => {
+  it('spells the unison specially (R / AR / dR)', () => {
     expect(intervalName(0)).toBe('R');
-    expect(intervalName(7)).toBe('augR');
-    expect(intervalName(-7)).toBe('dimR');
+    expect(intervalName(7)).toBe('AR');
+    expect(intervalName(-7)).toBe('dR');
   });
 });
 

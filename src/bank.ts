@@ -28,7 +28,8 @@ export interface Pattern {
   kind: Kind; // interval / triad / chord (drives the appended category word)
   intervals: Fifths[];
   tier: Tier; // minimum tier; cumulative
-  qualifier?: string; // parenthetical voicing note: 'reduced', 'shell', '1st inversion', 'rootless A', '3–7'…
+  qualifier?: string; // parenthetical voicing note: 'no 5', 'shell', '1st inv.', 'rootless A'…
+  weight?: number; // relative pick weight (default 1); < 1 = rarer. Dyads use 0.3.
 }
 
 // Interval tokens → fifths from root (see docs/00-music-theory.md).
@@ -42,22 +43,22 @@ const dim7 = -9, m7 = -2, M7 = 5;
 
 export const BANK: readonly Pattern[] = [
   // ── EASY ──────────────────────────────────────────────────────────────
-  { name: 'int-m2', display: 'Minor 2nd', kind: 'interval', intervals: [R, m2], tier: 'easy' },
-  { name: 'int-m6', display: 'Minor 6th', kind: 'interval', intervals: [R, m6], tier: 'easy' },
-  { name: 'int-m3', display: 'Minor 3rd', kind: 'interval', intervals: [R, m3], tier: 'easy' },
-  { name: 'int-m7', display: 'Minor 7th', kind: 'interval', intervals: [R, m7], tier: 'easy' },
-  { name: 'int-P4', display: 'Perfect 4th', kind: 'interval', intervals: [R, P4], tier: 'easy' },
-  { name: 'int-P5', display: 'Perfect 5th', kind: 'interval', intervals: [R, P5], tier: 'easy' },
-  { name: 'int-M2', display: 'Major 2nd', kind: 'interval', intervals: [R, M2], tier: 'easy' },
-  { name: 'int-M6', display: 'Major 6th', kind: 'interval', intervals: [R, M6], tier: 'easy' },
-  { name: 'int-M3', display: 'Major 3rd', kind: 'interval', intervals: [R, M3], tier: 'easy' },
-  { name: 'int-M7', display: 'Major 7th', kind: 'interval', intervals: [R, M7], tier: 'easy' },
+  { name: 'int-m2', display: 'Minor 2nd', kind: 'interval', weight: 0.3,intervals: [R, m2], tier: 'easy' },
+  { name: 'int-m6', display: 'Minor 6th', kind: 'interval', weight: 0.3,intervals: [R, m6], tier: 'easy' },
+  { name: 'int-m3', display: 'Minor 3rd', kind: 'interval', weight: 0.3,intervals: [R, m3], tier: 'easy' },
+  { name: 'int-m7', display: 'Minor 7th', kind: 'interval', weight: 0.3,intervals: [R, m7], tier: 'easy' },
+  { name: 'int-P4', display: 'Perfect 4th', kind: 'interval', weight: 0.3,intervals: [R, P4], tier: 'easy' },
+  { name: 'int-P5', display: 'Perfect 5th', kind: 'interval', weight: 0.3,intervals: [R, P5], tier: 'easy' },
+  { name: 'int-M2', display: 'Major 2nd', kind: 'interval', weight: 0.3,intervals: [R, M2], tier: 'easy' },
+  { name: 'int-M6', display: 'Major 6th', kind: 'interval', weight: 0.3,intervals: [R, M6], tier: 'easy' },
+  { name: 'int-M3', display: 'Major 3rd', kind: 'interval', weight: 0.3,intervals: [R, M3], tier: 'easy' },
+  { name: 'int-M7', display: 'Major 7th', kind: 'interval', weight: 0.3,intervals: [R, M7], tier: 'easy' },
   { name: 'maj', display: 'Major', kind: 'triad', intervals: [R, M3, P5], tier: 'easy' },
   { name: 'min', display: 'Minor', kind: 'triad', intervals: [R, m3, P5], tier: 'easy' },
 
   // ── MEDIUM (adds) ─────────────────────────────────────────────────────
-  { name: 'int-aug4', display: 'Augmented 4th', kind: 'interval', intervals: [R, aug4], tier: 'medium' },
-  { name: 'int-dim5', display: 'Diminished 5th', kind: 'interval', intervals: [R, dim5], tier: 'medium' },
+  { name: 'int-aug4', display: 'Augmented 4th', kind: 'interval', weight: 0.3,intervals: [R, aug4], tier: 'medium' },
+  { name: 'int-dim5', display: 'Diminished 5th', kind: 'interval', weight: 0.3,intervals: [R, dim5], tier: 'medium' },
   { name: 'dim', display: 'Diminished', kind: 'triad', intervals: [R, m3, dim5], tier: 'medium' },
   { name: 'aug', display: 'Augmented', kind: 'triad', intervals: [R, M3, aug5], tier: 'medium' },
   { name: 'sus2', display: 'sus2', kind: 'chord', intervals: [R, M2, P5], tier: 'medium' },
@@ -71,9 +72,9 @@ export const BANK: readonly Pattern[] = [
   { name: 'm7♭5', display: 'm7♭5', kind: 'chord', intervals: [R, m3, dim5, m7], tier: 'medium' },
 
   // ── HARD (adds) ───────────────────────────────────────────────────────
-  { name: 'int-aug5', display: 'Augmented 5th', kind: 'interval', intervals: [R, aug5], tier: 'hard' },
-  { name: 'int-aug2', display: 'Augmented 2nd', kind: 'interval', intervals: [R, aug2], tier: 'hard' },
-  { name: 'int-dim7', display: 'Diminished 7th', kind: 'interval', intervals: [R, dim7], tier: 'hard' },
+  { name: 'int-aug5', display: 'Augmented 5th', kind: 'interval', weight: 0.3,intervals: [R, aug5], tier: 'hard' },
+  { name: 'int-aug2', display: 'Augmented 2nd', kind: 'interval', weight: 0.3,intervals: [R, aug2], tier: 'hard' },
+  { name: 'int-dim7', display: 'Diminished 7th', kind: 'interval', weight: 0.3,intervals: [R, dim7], tier: 'hard' },
   { name: 'dim7', display: 'Diminished 7th', kind: 'chord', intervals: [R, m3, dim5, dim7], tier: 'hard' },
   { name: 'add9', display: 'add9', kind: 'chord', intervals: [R, M3, P5, M2], tier: 'hard' },
   { name: 'madd9', display: 'm add9', kind: 'chord', intervals: [R, m3, P5, M2], tier: 'hard' },
@@ -153,19 +154,19 @@ export const BANK: readonly Pattern[] = [
   { name: 'aug-53r', display: 'Augmented', kind: 'triad', intervals: [aug5, M3, R], tier: 'expert', qualifier: '2nd inv., open' },
   // Rootless guide-tone pairs ⟂ — the 3–7 of the implied chord (played over its
   // implied-root bass); named by that chord.
-  { name: 'gt-dom-37', display: 'Dominant 7th', kind: 'chord', intervals: [M3, m7], tier: 'expert', qualifier: 'guide tone pair' },
-  { name: 'gt-dom-73', display: 'Dominant 7th', kind: 'chord', intervals: [m7, M3], tier: 'expert', qualifier: 'guide tone pair' },
-  { name: 'gt-min-37', display: 'Minor 7th', kind: 'chord', intervals: [m3, m7], tier: 'expert', qualifier: 'guide tone pair' },
-  { name: 'gt-min-73', display: 'Minor 7th', kind: 'chord', intervals: [m7, m3], tier: 'expert', qualifier: 'guide tone pair' },
-  { name: 'gt-maj-37', display: 'Major 7th', kind: 'chord', intervals: [M3, M7], tier: 'expert', qualifier: 'guide tone pair' },
-  { name: 'gt-maj-73', display: 'Major 7th', kind: 'chord', intervals: [M7, M3], tier: 'expert', qualifier: 'guide tone pair' },
+  { name: 'gt-dom-37', display: 'Dominant 7th', kind: 'chord', intervals: [M3, m7], tier: 'expert', weight: 0.3, qualifier: 'guide tone pair' },
+  { name: 'gt-dom-73', display: 'Dominant 7th', kind: 'chord', intervals: [m7, M3], tier: 'expert', weight: 0.3, qualifier: 'guide tone pair' },
+  { name: 'gt-min-37', display: 'Minor 7th', kind: 'chord', intervals: [m3, m7], tier: 'expert', weight: 0.3, qualifier: 'guide tone pair' },
+  { name: 'gt-min-73', display: 'Minor 7th', kind: 'chord', intervals: [m7, m3], tier: 'expert', weight: 0.3, qualifier: 'guide tone pair' },
+  { name: 'gt-maj-37', display: 'Major 7th', kind: 'chord', intervals: [M3, M7], tier: 'expert', weight: 0.3, qualifier: 'guide tone pair' },
+  { name: 'gt-maj-73', display: 'Major 7th', kind: 'chord', intervals: [M7, M3], tier: 'expert', weight: 0.3, qualifier: 'guide tone pair' },
   // Rootless 3–6 dyads ⟂ — the 3rd + 6th of the implied 6th chord.
-  { name: 'd36-maj', display: 'Major 6th', kind: 'chord', intervals: [M3, M6], tier: 'expert', qualifier: '3/6 dyad' },
-  { name: 'd36-maj-r', display: 'Major 6th', kind: 'chord', intervals: [M6, M3], tier: 'expert', qualifier: '3/6 dyad' },
-  { name: 'd36-min', display: 'Minor 6th', kind: 'chord', intervals: [m3, M6], tier: 'expert', qualifier: '3/6 dyad' },
-  { name: 'd36-min-r', display: 'Minor 6th', kind: 'chord', intervals: [M6, m3], tier: 'expert', qualifier: '3/6 dyad' },
-  { name: 'd36-mb6', display: 'Minor ♭6', kind: 'chord', intervals: [m3, m6], tier: 'expert', qualifier: '3/6 dyad' },
-  { name: 'd36-mb6-r', display: 'Minor ♭6', kind: 'chord', intervals: [m6, m3], tier: 'expert', qualifier: '3/6 dyad' },
+  { name: 'd36-maj', display: 'Major 6th', kind: 'chord', intervals: [M3, M6], tier: 'expert', weight: 0.3, qualifier: '3/6 dyad' },
+  { name: 'd36-maj-r', display: 'Major 6th', kind: 'chord', intervals: [M6, M3], tier: 'expert', weight: 0.3, qualifier: '3/6 dyad' },
+  { name: 'd36-min', display: 'Minor 6th', kind: 'chord', intervals: [m3, M6], tier: 'expert', weight: 0.3, qualifier: '3/6 dyad' },
+  { name: 'd36-min-r', display: 'Minor 6th', kind: 'chord', intervals: [M6, m3], tier: 'expert', weight: 0.3, qualifier: '3/6 dyad' },
+  { name: 'd36-mb6', display: 'Minor ♭6', kind: 'chord', intervals: [m3, m6], tier: 'expert', weight: 0.3, qualifier: '3/6 dyad' },
+  { name: 'd36-mb6-r', display: 'Minor ♭6', kind: 'chord', intervals: [m6, m3], tier: 'expert', weight: 0.3, qualifier: '3/6 dyad' },
   // Rootless 4-note A/B voicings ⟂.
   { name: 'min9-rlA', display: 'Minor 9th', kind: 'chord', intervals: [m3, P5, m7, M2], tier: 'expert', qualifier: 'rootless A' },
   { name: 'min9-rlB', display: 'Minor 9th', kind: 'chord', intervals: [m7, M2, m3, P5], tier: 'expert', qualifier: 'rootless B' },

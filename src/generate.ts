@@ -164,10 +164,9 @@ export function generatePuzzle(cfg: Config, patterns: readonly Pattern[], seed: 
   const rng = makeRng(seed);
 
   const pattern = weightedPick(rng, patterns, (p) => {
-    // Downweight two-note patterns (dyads) — whether classed interval or chord
-    // (e.g. Expert guide-tone / 3–6 pairs) — so they don't dominate.
-    const dyadW = p.intervals.length === 2 ? cfg.dyadWeight : 1;
-    return dyadW * (cfg.patternWeights?.[p.name] ?? 1);
+    // Per-pattern pick weight (bank.ts `weight`, default 1), times any per-config
+    // override. Dyads carry weight 0.3 in the bank so they don't dominate.
+    return (p.weight ?? 1) * (cfg.patternWeights?.[p.name] ?? 1);
   });
   const roots = validRoots(pattern, cfg);
   if (roots.length === 0) throw new Error(`No valid roots for pattern ${pattern.name}`);

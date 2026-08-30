@@ -35,7 +35,8 @@ const NUMS = [4, 1, 5, 2, 6, 3, 7] as const;
 const PERFECT = new Set([1, 4, 5]);
 const dup = (s: string, k: number): string => s.repeat(k);
 
-/** Name an interval from the root, e.g. 0→"R", −3→"m3", +6→"aug4", +7→"augR". */
+/** Name an interval from the root, e.g. 0→"R", −3→"m3", +6→"A4", +7→"AR"
+ * (A = augmented, d = diminished — compact for the diamonds). */
 export function intervalName(f: Fifths): string {
   const n = NUMS[mod(f + 1, 7)];
   const k = Math.floor((f + 1) / 7); // 0 = Perfect/Major band
@@ -44,15 +45,15 @@ export function intervalName(f: Fifths): string {
     ? k === 0
       ? 'P'
       : k > 0
-        ? dup('aug', k)
-        : dup('dim', -k)
+        ? dup('A', k)
+        : dup('d', -k)
     : k === 0
       ? 'M'
       : k > 0
-        ? dup('aug', k)
+        ? dup('A', k)
         : k === -1
           ? 'm'
-          : dup('dim', -k - 1);
+          : dup('d', -k - 1);
   return n === 1 ? q + 'R' : q + n; // augR / dimR for the unison
 }
 

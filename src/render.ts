@@ -240,7 +240,7 @@ export function targetPitch(availW: number): number {
  * Draw the target intervals as puzzle-style diamonds in a tight horizontal row —
  * the same diamond-in-slot ratio and one-diagonal (near-touching) spacing as the
  * grid. Driven by a shared `pitch` so the size is constant across puzzles and up
- * to REF_LEN fit. Font is scaled so the widest labels (aug2/dim5) always fit.
+ * to REF_LEN fit. Font is scaled so the widest labels (A2/d5) always fit.
  */
 export function renderTokens(tokensEl: HTMLElement, puzzle: Puzzle, pitch: number): TokenView {
   tokensEl.innerHTML = '';

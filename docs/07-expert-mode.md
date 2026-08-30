@@ -106,14 +106,14 @@ maj9 A `[M3,P5,M7,M2]` / B `[M7,M2,M3,P5]`.
 
 ## §3 — Data / naming / test changes
 
-- **Every Expert pattern still needs all the existing Pattern fields:** `name`
-  (stable id), `display`, `kind`, `intervals`, `tier: 'expert'`, `reduced?`. "Off-
-  root" isn't a new field — it's derived (`!intervals.includes(0)` for the bass).
-- **`kind` for Expert:** shells / colors / rootless-4-note / rooted-shells →
-  `'chord'`; the 2-note dyads → `'interval'` (so `dyadWeight` still downweights
-  them). **Triad inversions → `'chord'`, not `'triad'`** — `'triad'` stays reserved
-  for the four bare root-position triads (keeps the categorization test intact),
-  and the inversion's display already says "Triad".
+- **Pattern fields:** `name`, `display`, `kind`, `intervals`, `tier: 'expert'`,
+  optional `qualifier` and `weight`. "Off-root" isn't a field — it's derived
+  (`!intervals.includes(0)` for the bass).
+- **`kind` for Expert (as built):** shells / colors / rootless-4-note / rooted-
+  shells → `'chord'`; triad inversions **and** re-voicings → `'triad'`; the
+  guide-tone / 3–6 pairs → `'chord'` (named by the implied chord). Dyads are no
+  longer downweighted by kind — every 2-note pattern carries `weight: 0.3` in the
+  bank (see docs/08 / `src/generate.ts`).
 - **Naming — superseded by [docs/08](08-naming-conventions.md).** The category
   word is now kept for **all** tiers, and the `reduced` boolean was replaced by a
   freeform `qualifier` shown in parens. Caption =

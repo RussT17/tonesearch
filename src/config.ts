@@ -18,8 +18,6 @@ export interface Config {
   rootCenterBias: number;
   /** Decoy window width as a position count (≥ max pattern span + 1). */
   decoyWindowWidth: number;
-  /** Relative pick weight for two-note interval dyads (chords/triads = 1). */
-  dyadWeight: number;
   /** Per-tier allowed notes; outer clamp for solution + decoys (E𝄫 … C𝄪 at widest). */
   noteRange: [number, number];
   /** Optional per-pattern weights by name; missing → 1 (uniform). */
@@ -46,9 +44,6 @@ const BASE = {
   gridMaxAspect: 1.6,
   rootCenterBias: 0, // full-variety (designer's call)
   decoyWindowWidth: 15,
-  // Downweight dyads so Easy (10 dyads : 2 triads) yields ≈3 dyads per 2 triads:
-  // 10·d : 2 = 3 : 2 → d = 0.3.
-  dyadWeight: 0.3,
 };
 
 /** Build the full Config for a difficulty tier. */
