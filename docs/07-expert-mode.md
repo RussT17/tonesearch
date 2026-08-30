@@ -36,10 +36,19 @@ line in `bank.test`, and (b) the "first tap = root" *clarification* prose in
 - **Naming stays generic** (no root letter — the root is hidden): "Major Triad
   (1st inv)", "Minor 9th (rootless A)". The `reduced` flag still appends `[reduced]`.
 
-## §2 — The Expert bank (+ 61 patterns)
+## §2 — The Expert bank (+ 71 patterns)
 
-Adds to all of Hard. `[reduced]` = economy voicing marker; ⟂ = off-root (starts
-off R / omits R). Intervals are `[fifths…]`.
+Adds to all of Hard. ⟂ = off-root (starts off R / omits R). Intervals are `[fifths…]`.
+
+> **Revised 2026-08-30 — `src/bank.ts` is authoritative.** Since this doc was
+> written: names/qualifiers were codified per [docs/08](08-naming-conventions.md)
+> (the `reduced` boolean below → freeform `qualifier`, e.g. "no 5", "ext'd shell"
+> for the 4-note extended shells, "shell" for the rooted 5-less shells); the triad
+> re-voicings grew from 4 to 12 (added **3–R–5** "1st inv., open" and **R–5–3**
+> "open" alongside **5–3–R** "2nd inv., open"); the guide-tone pairs and 3–6 dyads
+> are now **named by the implied chord** ("Dominant 7th (guide tone pair)", "Major
+> 6th (3/6 dyad)") and are `kind:'chord'`; a **Minor ♭6** 3–6 dyad (both orders)
+> was added. Net +10 → 71 Expert patterns.
 
 ### Extended-chord shells — reduced 4-note voicings (root-position, `[reduced]`) — 11
 `dom9 [R,M3,m7,M2]`, `dom13 [R,M3,m7,M6]`, `dom7♭9 [R,M3,m7,m2]`,
@@ -109,10 +118,10 @@ maj9 A `[M3,P5,M7,M2]` / B `[M7,M2,M3,P5]`.
   word is now kept for **all** tiers, and the `reduced` boolean was replaced by a
   freeform `qualifier` shown in parens. Caption =
   `${display} ${categoryLabel(kind)}${qualifier ? ' (' + qualifier + ')' : ''}`.
-  Expert captions read e.g. "Major Triad (1st inversion)", "m9 Chord (rootless A)",
-  "Dominant 9th Chord (shell)"; triad inversions/5–3–R are `kind:'triad'`; the
-  guide-tone/3–6 dyads are named by the interval they realize + the pair
-  ("Diminished 5th Interval (dom guide tones)").
+  Expert captions read e.g. "Major Triad (1st inv.)", "Minor 9th Chord (rootless A)",
+  "Dominant 9th Chord (ext'd shell)"; triad inversions/re-voicings are `kind:'triad'`;
+  the guide-tone pairs and 3–6 dyads are `kind:'chord'`, named by the **implied
+  chord** ("Dominant 7th Chord (guide tone pair)", "Major 6th Chord (3/6 dyad)").
 - **`Tier` gains `'expert'`** (`TIER_RANK.expert = 3`); `bankForTier('expert')`
   returns all; `configFor('expert') = { gridCellCount: 18, noteRange: [-12, 12] }`
   (per [05 §3]/[03 §8]).
