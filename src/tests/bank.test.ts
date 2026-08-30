@@ -21,9 +21,13 @@ describe('bank integrity', () => {
     }
   });
 
-  it('only the four bare triads are kind "triad" (inversions are chords)', () => {
-    const triads = new Set(BANK.filter((p) => p.kind === 'triad').map((p) => p.name));
-    expect(triads).toEqual(new Set(['maj', 'min', 'dim', 'aug']));
+  it('kind "triad" is only the triad family; sus chords are kind "chord"', () => {
+    const byName = new Map(BANK.map((p) => [p.name, p]));
+    for (const n of ['maj', 'min', 'dim', 'aug']) expect(byName.get(n)!.kind).toBe('triad');
+    for (const n of ['sus2', 'sus4']) expect(byName.get(n)!.kind).toBe('chord');
+    // every kind:'triad' names one of the four triad qualities (bare or a voicing)
+    const qualities = new Set(['Major', 'Minor', 'Diminished', 'Augmented']);
+    for (const p of BANK) if (p.kind === 'triad') expect(qualities.has(p.display)).toBe(true);
   });
 
   it('E/M/H are all root-position; only Expert may start off-root', () => {
@@ -31,8 +35,10 @@ describe('bank integrity', () => {
     expect(bankForTier('expert').some((p) => p.intervals[0] !== 0)).toBe(true); // inversions/rootless
   });
 
-  it('the Hard-and-below reduced set is exactly {dom13, maj13, min13, min11}', () => {
-    const reduced = new Set(bankForTier('hard').filter((p) => p.reduced).map((p) => p.name));
+  it('the Hard-and-below "reduced" qualifier set is exactly {dom13, maj13, min13, min11}', () => {
+    const reduced = new Set(
+      bankForTier('hard').filter((p) => p.qualifier === 'reduced').map((p) => p.name),
+    );
     expect(reduced).toEqual(new Set(['dom13', 'maj13', 'min13', 'min11']));
   });
 

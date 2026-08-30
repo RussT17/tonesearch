@@ -105,12 +105,14 @@ maj9 A `[M3,P5,M7,M2]` / B `[M7,M2,M3,P5]`.
   them). **Triad inversions → `'chord'`, not `'triad'`** — `'triad'` stays reserved
   for the four bare root-position triads (keeps the categorization test intact),
   and the inversion's display already says "Triad".
-- **Category word suppressed for Expert.** Today's caption is
-  `${display} ${categoryLabel(kind)}${reduced?' [reduced]'}`. Expert display names
-  are self-descriptive ("Major Triad (1st inv)", "Quartal", "Minor 9th (rootless
-  A)"), so appending Interval/Triad/Chord reads redundant. `patternName` should
-  **skip the category word when `tier === 'expert'`**, rendering just
-  `${display}${reduced?' [reduced]'}`.
+- **Naming — superseded by [docs/08](08-naming-conventions.md).** The category
+  word is now kept for **all** tiers, and the `reduced` boolean was replaced by a
+  freeform `qualifier` shown in parens. Caption =
+  `${display} ${categoryLabel(kind)}${qualifier ? ' (' + qualifier + ')' : ''}`.
+  Expert captions read e.g. "Major Triad (1st inversion)", "m9 Chord (rootless A)",
+  "Dominant 9th Chord (shell)"; triad inversions/5–3–R are `kind:'triad'`; the
+  guide-tone/3–6 dyads are named by the interval they realize + the pair
+  ("Diminished 5th Interval (dom guide tones)").
 - **`Tier` gains `'expert'`** (`TIER_RANK.expert = 3`); `bankForTier('expert')`
   returns all; `configFor('expert') = { gridCellCount: 18, noteRange: [-12, 12] }`
   (per [05 §3]/[03 §8]).

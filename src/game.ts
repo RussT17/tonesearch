@@ -35,11 +35,10 @@ function loadTier(): Tier {
   return 'easy'; // default
 }
 
-/** The caption: name + category word (Interval/Triad/Chord), then any marker.
- * Expert names are self-descriptive ("Major Triad (1st inv)", "Quartal"), so the
- * category word is suppressed there (docs/07 §3). */
+/** The caption: name + category word (Interval/Triad/Chord) + freeform qualifier
+ * in parens ("reduced", "1st inversion", "rootless A"…) — docs/08. */
 const patternName = (p: Pattern): string =>
-  `${p.display}${p.tier === 'expert' ? '' : ` ${categoryLabel(p.kind)}`}${p.reduced ? ' [reduced]' : ''}`;
+  `${p.display} ${categoryLabel(p.kind)}${p.qualifier ? ` (${p.qualifier})` : ''}`;
 
 /** The voiced (ascending, root-seated) MIDI of the last note in `notes`. */
 const lastVoiced = (notes: number[]): number => {
