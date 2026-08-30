@@ -190,8 +190,12 @@ export function startGame(root: HTMLElement): void {
     const selectedNotes = selection.map((id) => noteOf.get(id)!);
     // Match the give-up gap between the final note and the chord: reveal waits one
     // arpeggio step (520ms) + 170ms after the last note ≈ 690ms.
-    audio.playChord(selectedNotes, 0.69);
-    rootlessBass(selectedNotes, 0.69); // implied root under the chord (rootless only)
+    if (puzzle.pattern.kind === 'scale') {
+      audio.playScaleRun(selectedNotes, 0.69); // a quick run up instead of a chord
+    } else {
+      audio.playChord(selectedNotes, 0.69);
+      rootlessBass(selectedNotes, 0.69); // implied root under the chord (rootless only)
+    }
     solved += 1;
     shell.counterEl.textContent = `Solved: ${solved}`;
     setTimeout(nextPuzzle, 1450); // later chord → hold a bit longer before advancing
@@ -219,10 +223,13 @@ export function startGame(root: HTMLElement): void {
       }, i * stepMs);
     });
     const arped = path.length * stepMs;
-    setTimeout(() => {
-      audio.playChord(puzzle.solutionNotes, 0.05); // then the chord
-      rootlessBass(puzzle.solutionNotes, 0.05);
-    }, arped + 120);
+    // Scales already climb note-by-note in the reveal — no closing chord needed.
+    if (puzzle.pattern.kind !== 'scale') {
+      setTimeout(() => {
+        audio.playChord(puzzle.solutionNotes, 0.05); // then the chord
+        rootlessBass(puzzle.solutionNotes, 0.05);
+      }, arped + 120);
+    }
     setTimeout(nextPuzzle, arped + 4500); // ~3s extra pause to take it all in, then advance
   }
 

@@ -5,10 +5,10 @@ const TIERS: Tier[] = ['easy', 'medium', 'hard', 'expert'];
 
 describe('bank integrity', () => {
   it('has the expected cumulative counts per tier, with unique ids', () => {
-    const counts: Record<Tier, number> = { easy: 12, medium: 25, hard: 45, expert: 116 };
+    const counts: Record<Tier, number> = { easy: 12, medium: 27, hard: 47, expert: 118 };
     for (const tier of TIERS) expect(bankForTier(tier).length).toBe(counts[tier]);
-    expect(BANK.length).toBe(116); // 45 E/M/H + 71 Expert
-    expect(new Set(BANK.map((p) => p.name)).size).toBe(116);
+    expect(BANK.length).toBe(118); // 47 E/M/H + 71 Expert
+    expect(new Set(BANK.map((p) => p.name)).size).toBe(118);
   });
 
   it('every pattern is 2–5 notes, no duplicate tones, named, valid tier', () => {

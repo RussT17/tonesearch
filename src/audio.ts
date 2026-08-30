@@ -254,6 +254,16 @@ export function playChord(notes: readonly Fifths[], when = 0): void {
   });
 }
 
+/** Play the notes as a quick ascending run (for scales) rather than a struck
+ * chord — a light flourish up the scale, voiced like the arpeggio. */
+export function playScaleRun(notes: readonly Fifths[], when = 0, step = 0.07): void {
+  if (muted) return;
+  const midis = ascendingMidis(notes);
+  whenRunning((c) => {
+    midis.forEach((m, i) => playFreq(c, midiToFreq(m), when + i * step, 0.26));
+  });
+}
+
 /** The implied root voiced as a bass note ~an octave below the sequence's first
  * note — the ROOT's pitch class (not the first note), seated in that register. */
 function bassMidi(rootFifths: Fifths, notes: readonly Fifths[]): number {

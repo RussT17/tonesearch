@@ -10,7 +10,7 @@
 import type { Fifths } from './theory';
 
 export type Tier = 'easy' | 'medium' | 'hard' | 'expert';
-export type Kind = 'interval' | 'triad' | 'chord';
+export type Kind = 'interval' | 'triad' | 'chord' | 'scale';
 
 const TIER_RANK: Record<Tier, number> = { easy: 0, medium: 1, hard: 2, expert: 3 };
 
@@ -19,6 +19,7 @@ const CATEGORY_LABEL: Record<Kind, string> = {
   interval: 'Interval',
   triad: 'Triad',
   chord: 'Chord',
+  scale: 'Scale',
 };
 export const categoryLabel = (kind: Kind): string => CATEGORY_LABEL[kind];
 
@@ -70,6 +71,9 @@ export const BANK: readonly Pattern[] = [
   { name: 'min6', display: 'Minor 6th', kind: 'chord', intervals: [R, m3, P5, M6], tier: 'medium' },
   { name: 'min♭6', display: 'Minor ♭6', kind: 'chord', intervals: [R, m3, P5, m6], tier: 'medium' },
   { name: 'm7♭5', display: 'm7♭5', kind: 'chord', intervals: [R, m3, dim5, m7], tier: 'medium' },
+  // Pentatonic scales — ascending, so the reveal / solve run climbs them.
+  { name: 'maj-pent', display: 'Major Pentatonic', kind: 'scale', intervals: [R, M2, M3, P5, M6], tier: 'medium' },
+  { name: 'min-pent', display: 'Minor Pentatonic', kind: 'scale', intervals: [R, m3, P4, P5, m7], tier: 'medium' },
 
   // ── HARD (adds) ───────────────────────────────────────────────────────
   { name: 'int-aug5', display: 'Augmented 5th', kind: 'interval', weight: 0.3,intervals: [R, aug5], tier: 'hard' },
