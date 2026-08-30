@@ -223,13 +223,14 @@ export function startGame(root: HTMLElement): void {
       }, i * stepMs);
     });
     const arped = path.length * stepMs;
-    // Scales already climb note-by-note in the reveal — no closing chord needed.
-    if (puzzle.pattern.kind !== 'scale') {
-      setTimeout(() => {
+    setTimeout(() => {
+      if (puzzle.pattern.kind === 'scale') {
+        audio.playScaleRun(puzzle.solutionNotes, 0.05); // cap the reveal with a quick run up
+      } else {
         audio.playChord(puzzle.solutionNotes, 0.05); // then the chord
         rootlessBass(puzzle.solutionNotes, 0.05);
-      }, arped + 120);
-    }
+      }
+    }, arped + 120);
     setTimeout(nextPuzzle, arped + 4500); // ~3s extra pause to take it all in, then advance
   }
 
