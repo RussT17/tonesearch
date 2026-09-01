@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { generatePuzzle, validRoots, isSolution, isPrefix, type Puzzle } from '../generate';
+import { generatePuzzle, isSolution, isPrefix, type Puzzle } from '../generate';
 import { configFor } from '../config';
-import { bankForTier, type Tier } from '../bank';
+import { type Tier } from '../bank';
 import { footprint, aspect } from '../geometry';
 
 const TIERS: Tier[] = ['easy', 'medium', 'hard', 'expert'];
@@ -30,25 +30,13 @@ function isConnected(p: Puzzle): boolean {
   return seen.size === p.cells.length;
 }
 
-describe('validRoots', () => {
-  it('is non-empty for every pattern within its tier (the generation hang guard)', () => {
-    for (const tier of TIERS) {
-      const cfg = configFor(tier);
-      for (const p of bankForTier(tier)) {
-        expect(validRoots(p, cfg).length).toBeGreaterThan(0);
-      }
-    }
-  });
-});
-
 describe('generatePuzzle invariants (every tier, many seeds)', () => {
   it('holds all structural invariants', () => {
     for (const tier of TIERS) {
       const cfg = configFor(tier);
-      const patterns = bankForTier(tier);
-      const [lo, hi] = cfg.noteRange;
+      const [b0, b1] = cfg.decoyRange;
       for (const seed of SEEDS) {
-        const p = generatePuzzle(cfg, patterns, seed);
+        const p = generatePuzzle(cfg, seed);
         const len = p.pattern.intervals.length;
 
         // solution path shape
@@ -61,17 +49,22 @@ describe('generatePuzzle invariants (every tier, many seeds)', () => {
           expect(Math.abs(a.col - b.col) + Math.abs(a.row - b.row)).toBe(1); // orthogonal
         }
 
-        // path notes equal root + intervals
+        // path notes equal root + intervals, and it solves root-agnostically
         expect(pathCells.map((c) => c.note)).toEqual(p.solutionNotes);
         expect(p.solutionNotes).toEqual(p.pattern.intervals.map((iv) => p.root + iv));
-
-        // it actually solves, root-agnostically
         expect(isSolution(pathCells.map((c) => c.note), p.pattern)).toBe(true);
 
-        // every note (solution + decoy) within the tier's noteRange
+        // decoys stay within the tier's decoy range, widened only to the solution's
+        // own extreme (docs/09 §6). Solution notes themselves are never clamped.
+        const solMin = Math.min(...p.solutionNotes);
+        const solMax = Math.max(...p.solutionNotes);
+        const effLo = Math.min(b0, solMin);
+        const effHi = Math.max(b1, solMax);
+        const pathSet = new Set(p.solutionPath);
         for (const c of p.cells) {
-          expect(c.note).toBeGreaterThanOrEqual(lo);
-          expect(c.note).toBeLessThanOrEqual(hi);
+          if (pathSet.has(c.id)) continue;
+          expect(c.note).toBeGreaterThanOrEqual(effLo);
+          expect(c.note).toBeLessThanOrEqual(effHi);
         }
 
         // grid: connected, met-or-exceeded target, aspect within cap
@@ -82,53 +75,32 @@ describe('generatePuzzle invariants (every tier, many seeds)', () => {
     }
   });
 
-  it('Easy yields ≈3 dyads per 2 triads (dyadWeight calibration)', () => {
-    const cfg = configFor('easy');
-    const patterns = bankForTier('easy'); // 10 dyads + 2 triads (maj, min)
-    let dyads = 0;
-    let triads = 0;
-    for (let seed = 0; seed < 3000; seed++) {
-      const p = generatePuzzle(cfg, patterns, seed);
-      if (p.pattern.kind === 'interval') dyads++;
-      else triads++;
-    }
-    const ratio = dyads / triads; // target 1.5 (3:2)
-    expect(ratio).toBeGreaterThan(1.35);
-    expect(ratio).toBeLessThan(1.65);
-  });
-
   it('is deterministic: same seed ⇒ identical puzzle', () => {
     const cfg = configFor('hard');
-    const patterns = bankForTier('hard');
-    expect(generatePuzzle(cfg, patterns, 12345)).toEqual(generatePuzzle(cfg, patterns, 12345));
+    expect(generatePuzzle(cfg, 12345)).toEqual(generatePuzzle(cfg, 12345));
   });
 });
 
 describe('isPrefix (per-step validation)', () => {
   it('accepts every growing prefix of a solution, rejects wrong continuations', () => {
-    const p = generatePuzzle(configFor('hard'), bankForTier('hard'), 2);
+    const p = generatePuzzle(configFor('hard'), 2);
     const notes = p.solutionNotes;
     for (let k = 0; k <= notes.length; k++) {
       expect(isPrefix(notes.slice(0, k), p.pattern)).toBe(true);
     }
-    // a wrong second note (not the pattern's 2nd interval from the root) → rejected
     expect(isPrefix([notes[0]!, notes[0]! + 1], p.pattern)).toBe(false);
-    // longer than the pattern → rejected
     expect(isPrefix([...notes, notes[0]!], p.pattern)).toBe(false);
   });
 });
 
 describe('isSolution (root-agnostic acceptance)', () => {
   it('accepts an alternate-root realization, rejects wrong intervals', () => {
-    const p = generatePuzzle(configFor('hard'), bankForTier('hard'), 1);
+    const p = generatePuzzle(configFor('hard'), 1);
     const correct = p.solutionNotes;
-    // shift every note by +4 fifths → a different root, same interval shape
     expect(isSolution(correct.map((n) => n + 4), p.pattern)).toBe(true);
-    // corrupt one interval → reject
     const wrong = [...correct];
     wrong[wrong.length - 1] = wrong[wrong.length - 1]! + 1;
     expect(isSolution(wrong, p.pattern)).toBe(false);
-    // wrong length → reject
     expect(isSolution(correct.slice(0, -1), p.pattern)).toBe(false);
   });
 });

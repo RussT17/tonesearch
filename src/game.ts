@@ -3,7 +3,7 @@
 
 import { generatePuzzle, isPrefix, type Puzzle } from './generate';
 import { configFor } from './config';
-import { bankForTier, categoryLabel, type Pattern, type Tier } from './bank';
+import { categoryLabel, type Pattern, type Tier } from './bank';
 import {
   mountShell,
   renderGrid,
@@ -147,7 +147,7 @@ export function startGame(root: HTMLElement): void {
 
   const newPuzzle = (): void => {
     shell.giveUpBtn.classList.remove('lit'); // clear the held Give Up highlight
-    puzzle = generatePuzzle(configFor(tier), bankForTier(tier), Math.floor(Math.random() * 1e9));
+    puzzle = generatePuzzle(configFor(tier), Math.floor(Math.random() * 1e9));
     selection = [];
     coordOf = new Map(puzzle.cells.map((c) => [c.id, { col: c.col, row: c.row }]));
     noteOf = new Map(puzzle.cells.map((c) => [c.id, c.note]));
