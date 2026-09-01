@@ -1,8 +1,12 @@
 # ToneSearch — Key-Aware Sequence Generation
 
-> **Status:** 📝 Spec, redesigned 2026-09-01 (supersedes an earlier
-> partition-function draft, then a granular-`type` draft). Redesigns how a puzzle's
-> (pattern, root) pair is chosen so pairings are as (un)common as in real music.
+> **Status:** 🔧 Mechanism implemented 2026-09-01 (`theory.ts` primitives,
+> `src/harmony.ts`, `generate.ts` swapped to `sampleHarmony`, `config.ts`
+> `decoyRange`) — **all weight tables / tone-set floors are still the illustrative
+> placeholders below, pending the tuning pass**. Remaining code cleanup: retire
+> `bank.ts` per-pattern `tier`/`weight` + `bankForTier`; add a `harmony:dump` tool.
+> Redesigns how a puzzle's (pattern, root) pair is chosen so pairings are as
+> (un)common as in real music.
 > New representations (key, mode, scale degree — all fifths) drive an **iterative
 > weighted draw** — mode → degree → pattern → key — where mode/degree use hand-coded
 > per-tier tables and the pattern step is *derived* from per-tier pack & commonness
