@@ -7,7 +7,12 @@ import {
   pitchClass,
   frequency,
   enharmonic,
+  tonicNote,
+  keyName,
+  degreeName,
+  MODE_OFFSET,
   type Fifths,
+  type Mode,
 } from '../theory';
 
 // Ground-truth tables from docs/00-music-theory.md, extended past F♭…B♯ into the
@@ -54,6 +59,37 @@ describe('intervalName', () => {
     expect(intervalName(0)).toBe('R');
     expect(intervalName(7)).toBe('AR');
     expect(intervalName(-7)).toBe('dR');
+  });
+});
+
+describe('keys, modes, degrees (docs/09)', () => {
+  it('tonicNote = sig + modeOffset across every signature', () => {
+    for (let sig = -6; sig <= 6; sig++) {
+      expect(tonicNote('major', sig)).toBe(sig + MODE_OFFSET.major);
+      expect(tonicNote('minor', sig)).toBe(sig + MODE_OFFSET.minor);
+    }
+    expect(tonicNote('major', 0)).toBe(-2); // C
+    expect(tonicNote('minor', 0)).toBe(1); // A
+    // relative minor sits 3 fifths sharp of its major
+    for (let sig = -6; sig <= 6; sig++) {
+      expect(tonicNote('minor', sig) - tonicNote('major', sig)).toBe(3);
+    }
+  });
+
+  it('keyName spells the tonic + quality', () => {
+    const cases: Array<[Mode, number, string]> = [
+      ['major', 0, 'C major'], ['minor', 0, 'A minor'], ['major', 1, 'G major'],
+      ['minor', 3, 'F♯ minor'], ['major', -6, 'G♭ major'], ['major', 6, 'F♯ major'],
+    ];
+    for (const [mode, sig, name] of cases) expect(keyName(mode, sig)).toBe(name);
+  });
+
+  it('degreeName labels degrees vs the major scale', () => {
+    const cases: Array<[Fifths, string]> = [
+      [0, '1'], [1, '5'], [2, '2'], [3, '6'], [4, '3'], [5, '7'], [6, '♯4'],
+      [-1, '4'], [-2, '♭7'], [-3, '♭3'], [-4, '♭6'], [-5, '♭2'], [-6, '♭5'],
+    ];
+    for (const [d, name] of cases) expect(degreeName(d)).toBe(name);
   });
 });
 

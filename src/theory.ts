@@ -57,6 +57,29 @@ export function intervalName(f: Fifths): string {
   return n === 1 ? q + 'R' : q + n; // augR / dimR for the unison
 }
 
+// --- Keys, modes, scale degrees (docs/09-key-aware-generation.md) ------------
+
+/** A tonal mode. Its tonic sits a fixed offset from the key signature's Dorian
+ * center on the line of fifths: major (Ionian) −2, minor (Aeolian) +1. */
+export type Mode = 'major' | 'minor';
+export const MODE_OFFSET: Record<Mode, Fifths> = { major: -2, minor: 1 };
+
+/** Tonic note (fifths from D) of `mode` in the key whose signature `sig` (fifths of
+ * sharpness; C/Am = 0, each ♯ +1, each ♭ −1) — C major = −2, A minor = +1. */
+export const tonicNote = (mode: Mode, sig: Fifths): Fifths => sig + MODE_OFFSET[mode];
+
+/** Human key name, e.g. (major, 0) → "C major", (minor, +1) → "E minor". */
+export const keyName = (mode: Mode, sig: Fifths): string =>
+  `${noteName(tonicNote(mode, sig))} ${mode}`;
+
+/** Scale-degree label for a degree (fifths from tonic): 0→"1", −1→"4", −3→"♭3",
+ * +6→"♯4". Mode-independent — the accidental is measured against the major scale. */
+export function degreeName(d: Fifths): string {
+  const n = NUMS[mod(d + 1, 7)];
+  const k = Math.floor((d + 1) / 7);
+  return accidental(k) + n;
+}
+
 // --- Arithmetic & audio ------------------------------------------------------
 
 /** The one operation: the note an interval above a root. */
