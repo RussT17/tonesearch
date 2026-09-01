@@ -3,7 +3,7 @@
 
 import { generatePuzzle, isPrefix, type Puzzle } from './generate';
 import { configFor } from './config';
-import { categoryLabel, type Pattern, type Tier } from './bank';
+import { categoryLabel, type Pattern, type Tier } from './pattern';
 import {
   mountShell,
   renderGrid,

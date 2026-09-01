@@ -3,7 +3,7 @@
 // inside it, name that path from a (pattern, root), fill the rest with decoys.
 
 import type { Fifths } from './theory';
-import type { Pattern } from './bank';
+import type { Pattern } from './pattern';
 import type { Config } from './config';
 import { sampleHarmony } from './harmony';
 import { footprint, aspect } from './geometry';

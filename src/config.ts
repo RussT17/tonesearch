@@ -2,7 +2,7 @@
 // / decoy knobs (docs/06 §1). A tier is just a Config; harmony.ts owns which
 // patterns/keys/degrees a tier draws (docs/09).
 
-import type { Tier } from './bank';
+import type { Tier } from './pattern';
 
 export interface Config {
   /** Which difficulty tier this config is — harmony.ts reads it for selection. */

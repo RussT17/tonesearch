@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { generatePuzzle, isSolution, isPrefix, type Puzzle } from '../generate';
 import { configFor } from '../config';
-import { type Tier } from '../bank';
+import { type Tier } from '../pattern';
 import { footprint, aspect } from '../geometry';
 
 const TIERS: Tier[] = ['easy', 'medium', 'hard', 'expert'];
