@@ -33,12 +33,15 @@ describe('commonness', () => {
   it('is the highest matching floor; null off any tone-set', () => {
     const maj = ALL_PATTERNS.find((p) => p.display === 'Major' && p.kind === 'triad' && !p.qualifier)!;
     const lydSig = ALL_PATTERNS.find((p) => p.display === 'maj7♯11')!; // the ♯11 shell
+    const dim7 = ALL_PATTERNS.find((p) => p.display === 'Diminished 7th' && p.kind === 'chord')!;
     // major IV (degree −1): a plain major triad is diatonic (Lydian) → ultra
     expect(commonness(maj, 'major', -1)).toBe('ultra');
-    // the ♯11 chord is the Lydian signature on IV → ultra; on I (Ionian) it needs
-    // the ♯4, which Ionian lacks → not present
+    // the ♯11 chord is the Lydian signature on IV → ultra; on I it's the (rarer)
+    // Lydian tonic, reachable at 'occasional'
     expect(commonness(lydSig, 'major', -1)).toBe('ultra');
-    expect(commonness(lydSig, 'major', 0)).toBeNull();
+    expect(commonness(lydSig, 'major', 0)).toBe('occasional');
+    // a fully-diminished 7th fits no tone-set on the major tonic → null
+    expect(commonness(dim7, 'major', 0)).toBeNull();
   });
 });
 

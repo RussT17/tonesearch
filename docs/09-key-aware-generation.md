@@ -4,10 +4,11 @@
 > **`src/harmony.config.ts`** (musical tokens: named tone-sets, packs-with-patterns,
 > per-degree commonness, self-contained tiers); `src/harmony.ts` is the
 > parser/builder/sampler; `src/pattern.ts` holds the shared types; `bank.ts` is
-> gone (its patterns migrated into packs). **All weights / tone-set floors are still
-> illustrative placeholders, pending the tuning pass.** Remaining: a `harmony:dump`
-> tool, then tune. Redesigns how a puzzle's (pattern, root) pair is chosen so
-> pairings are as (un)common as in real music.
+> gone (its patterns migrated into packs). **Tuning pass landed (2026-09) for
+> `SCALE_DEGREE_TONE_SETS` and each tier's mode + degree weights** (a considered
+> music-theory pass, still refine-able); pack / commonness / key-signature weights
+> remain rough. Redesigns how a puzzle's (pattern, root) pair is chosen so pairings
+> are as (un)common as in real music.
 > New representations (key, mode, scale degree — all fifths) drive an **iterative
 > weighted draw** — mode → degree → pattern → key — where mode/degree use hand-coded
 > per-tier tables and the pattern step is *derived* from per-tier pack & commonness
