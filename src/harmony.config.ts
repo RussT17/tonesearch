@@ -577,7 +577,7 @@ export const SCALE_DEGREE_TONE_SETS: Record<Mode, Record<string, ToneSetRef[]>> 
 export const TIERS: Record<Tier, TierConfig> = {
   easy: {
     modes: { major: 1 }, // major only
-    keys: { major: { all_natural: 100, '1_sharp': 95, '1_flat': 95, '2_sharp': 88, '2_flat': 88 } },
+    keys: { major: { all_natural: 1, '1_sharp': 1, '1_flat': 1, '2_sharp': 1, '2_flat': 1 } },
     degrees: { major: { '1': 100, '4': 95, '5': 95, '6': 90, '2': 88, '3': 85 } },
     commonness: { ultra: 1 },
     packs: { simple_intervals: 5, triads: 8 },
@@ -585,12 +585,12 @@ export const TIERS: Record<Tier, TierConfig> = {
   medium: {
     modes: { major: 0.7, minor: 0.3 },
     keys: {
-      major: { all_natural: 100, '1_sharp': 90, '1_flat': 90, '2_sharp': 75, '2_flat': 75, '3_sharp': 55, '3_flat': 55 },
-      minor: { all_natural: 100, '1_sharp': 90, '1_flat': 90, '2_sharp': 75, '2_flat': 75, '3_sharp': 55, '3_flat': 55 },
+      major: { all_natural: 1, '1_sharp': 1, '1_flat': 1, '2_sharp': 1, '2_flat': 1, '3_sharp': 1, '3_flat': 1, '4_sharp': 1, '4_flat': 1 },
+      minor: { all_natural: 1, '1_sharp': 1, '1_flat': 1, '2_sharp': 1, '2_flat': 1, '3_sharp': 1, '3_flat': 1, '4_sharp': 1, '4_flat': 1 },
     },
     degrees: {
-      major: { '1': 100, '5': 82, '4': 78, '6': 46, '2': 40, '3': 18, '7': 15, '♭7': 20 },
-      minor: { '1': 100, '5': 80, '4': 60, '♭7': 55, '♭6': 45, '♭3': 45, '2': 22 },
+      major: { '1': 100, '5': 95, '4': 95, '6': 90, '2': 88, '3': 85, '7': 80 },
+      minor: { '1': 100, '5': 95, '2': 90, '4': 85, '♭7': 85, '♭6': 85, '♭3': 85 },
     },
     commonness: { ultra: 1, very: 0.5 },
     packs: { simple_intervals: 3, triads: 8, tritone_intervals: 1.5, sevenths: 8, sixths: 4, suspended_triads: 3, pentatonic_scales: 2 },
@@ -598,12 +598,12 @@ export const TIERS: Record<Tier, TierConfig> = {
   hard: {
     modes: { major: 0.6, minor: 0.4 },
     keys: {
-      major: { all_natural: 100, '1_sharp': 92, '1_flat': 92, '2_sharp': 82, '2_flat': 82, '3_sharp': 65, '3_flat': 65, '4_sharp': 45, '4_flat': 45 },
-      minor: { all_natural: 100, '1_sharp': 92, '1_flat': 92, '2_sharp': 82, '2_flat': 82, '3_sharp': 65, '3_flat': 65, '4_sharp': 45, '4_flat': 45 },
+      major: { all_natural: 1, '1_sharp': 1, '1_flat': 1, '2_sharp': 1, '2_flat': 1, '3_sharp': 1, '3_flat': 1, '4_sharp': 1, '4_flat': 1, '5_sharp': 0.6, '5_flat': 0.6, '6_sharp': 0.3, '6_flat': 0.3 },
+      minor: { all_natural: 1, '1_sharp': 1, '1_flat': 1, '2_sharp': 1, '2_flat': 1, '3_sharp': 1, '3_flat': 1, '4_sharp': 1, '4_flat': 1, '5_sharp': 0.6, '5_flat': 0.6, '6_sharp': 0.3, '6_flat': 0.3 },
     },
     degrees: {
-      major: { '1': 100, '5': 82, '4': 78, '6': 48, '2': 42, '3': 20, '7': 16, '♭7': 22, '♭6': 12, '♭3': 10 },
-      minor: { '1': 100, '5': 82, '4': 60, '♭7': 55, '♭6': 50, '♭3': 48, '2': 24, '7': 16, '♭2': 5 },
+      major: { '1': 100, '5': 95, '4': 95, '6': 90, '2': 88, '3': 85, '7': 80, '♭7': 44, '♭6': 24, '♭3': 20 },
+      minor: { '1': 100, '5': 95, '2': 90, '4': 85, '♭7': 85, '♭6': 85, '♭3': 85, '7': 44, '♭2': 24 },
     },
     commonness: { ultra: 1, very: 0.7, somewhat: 0.5 },
     packs: {
@@ -614,12 +614,12 @@ export const TIERS: Record<Tier, TierConfig> = {
   expert: {
     modes: { major: 0.5, minor: 0.5 },
     keys: {
-      major: { all_natural: 100, '1_sharp': 92, '1_flat': 92, '2_sharp': 85, '2_flat': 85, '3_sharp': 72, '3_flat': 72, '4_sharp': 55, '4_flat': 55, '5_sharp': 22, '5_flat': 22, '6_sharp': 15, '6_flat': 15 },
-      minor: { all_natural: 100, '1_sharp': 92, '1_flat': 92, '2_sharp': 85, '2_flat': 85, '3_sharp': 72, '3_flat': 72, '4_sharp': 55, '4_flat': 55, '5_sharp': 22, '5_flat': 22, '6_sharp': 15, '6_flat': 15 },
+      major: { all_natural: 1, '1_sharp': 1, '1_flat': 1, '2_sharp': 1, '2_flat': 1, '3_sharp': 1, '3_flat': 1, '4_sharp': 1, '4_flat': 1, '5_sharp': 0.8, '5_flat': 0.8, '6_sharp': 0.5, '6_flat': 0.5 },
+      minor: { all_natural: 1, '1_sharp': 1, '1_flat': 1, '2_sharp': 1, '2_flat': 1, '3_sharp': 1, '3_flat': 1, '4_sharp': 1, '4_flat': 1, '5_sharp': 0.8, '5_flat': 0.8, '6_sharp': 0.5, '6_flat': 0.5 },
     },
     degrees: {
-      major: { '1': 100, '5': 82, '4': 78, '6': 48, '2': 42, '3': 20, '7': 16, '♭7': 22, '♭6': 12, '♭3': 10, '♭2': 3, '♯4': 3 },
-      minor: { '1': 100, '5': 82, '4': 60, '♭7': 55, '♭6': 50, '♭3': 48, '2': 24, '7': 16, '♭2': 5, '6': 4, '♯4': 2 },
+      major: { '1': 100, '5': 95, '4': 95, '6': 90, '2': 88, '3': 85, '7': 80, '♭7': 44, '♭6': 24, '♭3': 20, '♭2': 10, '♯4': 5 },
+      minor: { '1': 100, '5': 95, '2': 90, '4': 85, '♭7': 85, '♭6': 85, '♭3': 85, '7': 44, '♭2': 24, '6': 10, '♯4': 5 },
     },
     commonness: { ultra: 1, very: 0.85, somewhat: 0.65, occasional: 0.35 },
     packs: {
