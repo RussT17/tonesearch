@@ -64,7 +64,7 @@ describe('sampleHarmony', () => {
       easySigs.add(p.sig);
     }
     expect([...easyModes]).toEqual(['major']);
-    expect(Math.max(...[...easySigs].map(Math.abs))).toBeLessThanOrEqual(1);
+    expect(Math.max(...[...easySigs].map(Math.abs))).toBeLessThanOrEqual(2); // beginner keys reach ±2
 
     const expertSigs = new Set<number>();
     for (let s = 0; s < 400; s++) expertSigs.add(sampleHarmony('expert', makeRng(s)).sig);
