@@ -8,7 +8,7 @@ const TIERS: Tier[] = ['easy', 'medium', 'hard', 'expert'];
 describe('harmony packs / patterns', () => {
   it('every pack is non-empty and all patterns parse to 2–5 distinct tones', () => {
     for (const pack of PACK_LIST) expect(pack.patterns.length).toBeGreaterThan(0);
-    expect(ALL_PATTERNS.length).toBe(118); // migrated from the former bank, nothing lost
+    expect(ALL_PATTERNS.length).toBe(142); // 118 migrated + 24 added (2 ext, 4 alt-dom, 3 color, 15 seventh inversions)
     for (const p of ALL_PATTERNS) {
       expect(p.intervals.length).toBeGreaterThanOrEqual(2);
       expect(p.intervals.length).toBeLessThanOrEqual(5);

@@ -76,6 +76,10 @@ export const TONE_SETS: Record<string, string[]> = {
   // one third, one seventh, no ♯5/♭5 clash with P5. Lets the ♯9-family voicings
   // (7♯9, 7♯9♭13, 7♯9♯11, 7♭9♯11) appear rarely.
   dominant_altered: ['R', 'm2', 'A2', 'M3', 'A4', 'P5', 'm6', 'm7'],
+  // Dominant / half-whole-diminished (HW octatonic): the ♭9 / ♯9 / ♯11 palette that
+  // keeps the NATURAL 13 (M6) — distinct from `dominant_altered`, which carries the
+  // ♭13 (m6) instead. Lets 13♭9 / 13♯9 appear. One third (M3), one seventh (m7).
+  dominant_diminished: ['R', 'm2', 'A2', 'M3', 'A4', 'P5', 'M6', 'm7'],
   // Plain triads as tight sets — so a degree can rank the bare triad on its own,
   // above any fuller chord a whole scale would also admit.
   major_triad: ['R', 'M3', 'P5'],
@@ -156,6 +160,8 @@ export const PACKS: Record<string, PatternSpec[]> = {
     { display: 'Dominant 13th', kind: 'chord', qualifier: 'no 5', tones: ['R', 'M3', 'm7', 'M2', 'M6'] },
     { display: 'Major 13th', kind: 'chord', qualifier: 'no 5', tones: ['R', 'M3', 'M7', 'M2', 'M6'] },
     { display: 'Minor 13th', kind: 'chord', qualifier: 'no 5', tones: ['R', 'm3', 'm7', 'M2', 'M6'] },
+    { display: 'maj7♯11', kind: 'chord', tones: ['R', 'M3', 'P5', 'M7', 'A4'] },
+    { display: 'Minor-major 9th', kind: 'chord', tones: ['R', 'm3', 'P5', 'M7', 'M2'] },
   ],
   altered_dominants: [
     { display: '7♭9', kind: 'chord', tones: ['R', 'M3', 'P5', 'm7', 'm2'] },
@@ -168,6 +174,10 @@ export const PACKS: Record<string, PatternSpec[]> = {
     { display: '7♭9♭13', kind: 'chord', tones: ['R', 'M3', 'm7', 'm2', 'm6'] },
     { display: '7♭9♯11', kind: 'chord', tones: ['R', 'M3', 'm7', 'm2', 'A4'] },
     { display: '7♯9♯11', kind: 'chord', tones: ['R', 'M3', 'm7', 'A2', 'A4'] },
+    { display: '9♯11', kind: 'chord', tones: ['R', 'M3', 'm7', 'M2', 'A4'] },
+    { display: '13♭9', kind: 'chord', tones: ['R', 'M3', 'm7', 'm2', 'M6'] },
+    { display: '7♯5♭9', kind: 'chord', tones: ['R', 'M3', 'A5', 'm7', 'm2'] },
+    { display: '7♯5♯9', kind: 'chord', tones: ['R', 'M3', 'A5', 'm7', 'A2'] },
   ],
   inverted_triads: [
     { display: 'Major', kind: 'triad', qualifier: '1st inv.', tones: ['M3', 'P5', 'R'] },
@@ -241,6 +251,9 @@ export const PACKS: Record<string, PatternSpec[]> = {
     { display: 'Quintal', kind: 'chord', tones: ['R', 'P5', 'M2', 'M6'] },
     { display: '7sus4', kind: 'chord', tones: ['R', 'P4', 'P5', 'm7'] },
     { display: '13sus4', kind: 'chord', tones: ['R', 'P4', 'm7', 'M2', 'M6'] },
+    { display: 'add4', kind: 'chord', tones: ['R', 'M3', 'P4', 'P5'] },
+    { display: 'add♯4', kind: 'chord', tones: ['R', 'M3', 'A4', 'P5'] },
+    { display: 'sus♭2', kind: 'chord', tones: ['R', 'm2', 'P5'] },
   ],
   rootless_voicings: [
     { display: 'Minor 9th', kind: 'chord', qualifier: 'rootless A', tones: ['m3', 'P5', 'm7', 'M2'] },
@@ -249,6 +262,26 @@ export const PACKS: Record<string, PatternSpec[]> = {
     { display: 'Dominant 13th', kind: 'chord', qualifier: 'rootless B', tones: ['m7', 'M2', 'M3', 'M6'] },
     { display: 'Major 9th', kind: 'chord', qualifier: 'rootless A', tones: ['M3', 'P5', 'M7', 'M2'] },
     { display: 'Major 9th', kind: 'chord', qualifier: 'rootless B', tones: ['M7', 'M2', 'M3', 'P5'] },
+  ],
+  // Seventh-chord inversions (bottom-to-top voicing). The dim7 entries are aurally
+  // identical across inversions (symmetric) but are DISTINCT note-name spellings /
+  // paths, like the augmented triad inversions — kept for the spelling puzzle.
+  seventh_inversions: [
+    { display: 'Dominant 7th', kind: 'chord', qualifier: '1st inv.', tones: ['M3', 'P5', 'm7', 'R'] },
+    { display: 'Dominant 7th', kind: 'chord', qualifier: '2nd inv.', tones: ['P5', 'm7', 'R', 'M3'] },
+    { display: 'Dominant 7th', kind: 'chord', qualifier: '3rd inv.', tones: ['m7', 'R', 'M3', 'P5'] },
+    { display: 'Major 7th', kind: 'chord', qualifier: '1st inv.', tones: ['M3', 'P5', 'M7', 'R'] },
+    { display: 'Major 7th', kind: 'chord', qualifier: '2nd inv.', tones: ['P5', 'M7', 'R', 'M3'] },
+    { display: 'Major 7th', kind: 'chord', qualifier: '3rd inv.', tones: ['M7', 'R', 'M3', 'P5'] },
+    { display: 'Minor 7th', kind: 'chord', qualifier: '1st inv.', tones: ['m3', 'P5', 'm7', 'R'] },
+    { display: 'Minor 7th', kind: 'chord', qualifier: '2nd inv.', tones: ['P5', 'm7', 'R', 'm3'] },
+    { display: 'Minor 7th', kind: 'chord', qualifier: '3rd inv.', tones: ['m7', 'R', 'm3', 'P5'] },
+    { display: 'm7♭5', kind: 'chord', qualifier: '1st inv.', tones: ['m3', 'd5', 'm7', 'R'] },
+    { display: 'm7♭5', kind: 'chord', qualifier: '2nd inv.', tones: ['d5', 'm7', 'R', 'm3'] },
+    { display: 'm7♭5', kind: 'chord', qualifier: '3rd inv.', tones: ['m7', 'R', 'm3', 'd5'] },
+    { display: 'Diminished 7th', kind: 'chord', qualifier: '1st inv.', tones: ['m3', 'd5', 'd7', 'R'] },
+    { display: 'Diminished 7th', kind: 'chord', qualifier: '2nd inv.', tones: ['d5', 'd7', 'R', 'm3'] },
+    { display: 'Diminished 7th', kind: 'chord', qualifier: '3rd inv.', tones: ['d7', 'R', 'm3', 'd5'] },
   ],
 };
 
@@ -353,6 +386,7 @@ export const SCALE_DEGREE_TONE_SETS: Record<Mode, Record<string, ToneSetRef[]>> 
       { toneSet: 'lydian_dominant', floor: 'occasional' },
       { toneSet: 'altered', floor: 'occasional' },
       { toneSet: 'dominant_altered', floor: 'occasional' },
+      { toneSet: 'dominant_diminished', floor: 'occasional' }, // 13♭9 / 13♯9 (HW-diminished)
     ],
     // vi — submediant minor. Local mode Aeolian (vi, vi7, vi9/11, vi(♭6), m(add9),
     // minor pentatonic → ultra).
@@ -465,6 +499,7 @@ export const SCALE_DEGREE_TONE_SETS: Record<Mode, Record<string, ToneSetRef[]>> 
       { toneSet: 'altered', floor: 'somewhat' },
       { toneSet: 'lydian_dominant', floor: 'occasional' },
       { toneSet: 'dominant_altered', floor: 'occasional' },
+      { toneSet: 'dominant_diminished', floor: 'occasional' }, // 13♭9 / 13♯9 (HW-diminished)
     ],
     // vii° — leading-tone chord on the RAISED 7. The characteristic chord is the
     // fully-diminished vii°7 (harmonic minor):
@@ -582,7 +617,7 @@ export const TIERS: Record<Tier, TierConfig> = {
     packs: {
       simple_intervals: 3, tritone_intervals: 1.5, augmented_diminished_intervals: 1, triads: 10,
       suspended_triads: 3, sevenths: 8, sixths: 5, pentatonic_scales: 2, extended_chords: 5, altered_dominants: 3,
-      inverted_triads: 3, open_triads: 2, rooted_shells: 3, extended_shells: 3,
+      inverted_triads: 3, open_triads: 2, rooted_shells: 3, extended_shells: 3, seventh_inversions: 3,
       guide_tone_dyads: 1.5, sixth_dyads: 1.5, color_chords: 2, rootless_voicings: 2,
     },
   },
