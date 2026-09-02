@@ -261,13 +261,14 @@ idiomatic degrees for free (an `aug4` ⊆ Lydian on major-4 = the diatonic trito
 
 ### §3.6 Key signature
 
-A weight per signature `−6…+6`, drawn independently (§2). Structurally it's
-mode-independent (a signature is one draw whether the instance is major or its
-relative minor); the numbers are an illustrative `TODO`:
-
-| sig | 0 | ±1 | ±2 | ±3 | ±4 | ±5 | ±6 |
-|---|---|---|---|---|---|---|---|
-| weight | 6 | 5 | 4 | 3 | 2 | 1 | 0.5 |
+A weight per signature, drawn after the mode (§2) and **conditional on it** —
+`keys: { major: {...}, minor: {...} }` per tier, keyed by the signature tokens
+(`all_natural`, `N_sharp`, `N_flat`). The two distributions differ meaningfully:
+heard music places the same instrument-idiomatic tonics on different signatures by
+mode (major spreads across 1–4 sharps via guitar pop and holds the 1–3 flats via
+band/jazz; minor triple-peaks at A/E-minor/D-minor and leans flatter overall). Both
+are center-heavy, tapering to the 6-accidental rim. Values are the tuning pass's
+heard-frequency estimates (still refine-able).
 
 ## §4 — No dead ends: the config invariant
 

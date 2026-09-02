@@ -38,7 +38,7 @@ export interface ToneSetRef {
  * packs/commonness levels are on) AND their weights, in one place. */
 export interface TierConfig {
   modes: Partial<Record<Mode, number>>;
-  keys: Record<string, number>;
+  keys: Partial<Record<Mode, Record<string, number>>>; // key-signature weights, per mode
   degrees: Partial<Record<Mode, Record<string, number>>>;
   commonness: Partial<Record<Commonness, number>>;
   packs: Record<string, number>;
@@ -534,14 +534,17 @@ export const SCALE_DEGREE_TONE_SETS: Record<Mode, Record<string, ToneSetRef[]>> 
 export const TIERS: Record<Tier, TierConfig> = {
   easy: {
     modes: { major: 1 }, // major only
-    keys: { all_natural: 6, '1_sharp': 5, '1_flat': 5 },
+    keys: { major: { all_natural: 100, '1_sharp': 95, '1_flat': 85 } },
     degrees: { major: { '1': 100, '5': 88, '4': 80, '6': 46, '2': 42 } },
     commonness: { ultra: 1 },
     packs: { simple_intervals: 3, triads: 10 },
   },
   medium: {
     modes: { major: 0.65, minor: 0.35 },
-    keys: { all_natural: 6, '1_sharp': 5, '1_flat': 5, '2_sharp': 4, '2_flat': 4, '3_sharp': 3, '3_flat': 3 },
+    keys: {
+      major: { all_natural: 100, '1_sharp': 95, '2_sharp': 80, '3_sharp': 60, '1_flat': 85, '2_flat': 78, '3_flat': 55 },
+      minor: { all_natural: 100, '1_sharp': 98, '2_sharp': 55, '3_sharp': 40, '1_flat': 92, '2_flat': 70, '3_flat': 62 },
+    },
     degrees: {
       major: { '1': 100, '5': 88, '4': 80, '6': 46, '2': 42, '3': 13, '7': 11, '♭7': 16 },
       minor: { '1': 100, '5': 80, '♭7': 55, '4': 55, '♭6': 50, '♭3': 48, '2': 24, '7': 16 },
@@ -551,7 +554,10 @@ export const TIERS: Record<Tier, TierConfig> = {
   },
   hard: {
     modes: { major: 0.65, minor: 0.35 },
-    keys: { all_natural: 6, '1_sharp': 5, '1_flat': 5, '2_sharp': 4, '2_flat': 4, '3_sharp': 3, '3_flat': 3, '4_sharp': 2, '4_flat': 2 },
+    keys: {
+      major: { all_natural: 100, '1_sharp': 95, '2_sharp': 80, '3_sharp': 60, '4_sharp': 42, '1_flat': 85, '2_flat': 78, '3_flat': 55, '4_flat': 28 },
+      minor: { all_natural: 100, '1_sharp': 98, '2_sharp': 55, '3_sharp': 40, '4_sharp': 35, '1_flat': 92, '2_flat': 70, '3_flat': 62, '4_flat': 38 },
+    },
     degrees: {
       major: { '1': 100, '5': 88, '4': 80, '6': 46, '2': 42, '3': 13, '7': 11, '♭7': 16, '♭6': 8, '♭3': 7 },
       minor: { '1': 100, '5': 80, '♭7': 55, '4': 55, '♭6': 50, '♭3': 48, '2': 24, '7': 16, '♭2': 5 },
@@ -565,8 +571,8 @@ export const TIERS: Record<Tier, TierConfig> = {
   expert: {
     modes: { major: 0.65, minor: 0.35 },
     keys: {
-      all_natural: 6, '1_sharp': 5, '1_flat': 5, '2_sharp': 4, '2_flat': 4, '3_sharp': 3, '3_flat': 3,
-      '4_sharp': 2, '4_flat': 2, '5_sharp': 1, '5_flat': 1, '6_sharp': 0.5, '6_flat': 0.5,
+      major: { all_natural: 100, '1_sharp': 95, '2_sharp': 80, '3_sharp': 60, '4_sharp': 42, '5_sharp': 12, '6_sharp': 3, '1_flat': 85, '2_flat': 78, '3_flat': 55, '4_flat': 28, '5_flat': 18, '6_flat': 4 },
+      minor: { all_natural: 100, '1_sharp': 98, '2_sharp': 55, '3_sharp': 40, '4_sharp': 35, '5_sharp': 10, '6_sharp': 2, '1_flat': 92, '2_flat': 70, '3_flat': 62, '4_flat': 38, '5_flat': 20, '6_flat': 8 },
     },
     degrees: {
       major: { '1': 100, '5': 88, '4': 80, '6': 46, '2': 42, '3': 13, '7': 11, '♭7': 16, '♭6': 8, '♭3': 7, '♭2': 1.5, '♯4': 2 },

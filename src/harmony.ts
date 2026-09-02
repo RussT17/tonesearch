@@ -96,22 +96,22 @@ export function commonness(p: Pattern, mode: Mode, degree: Fifths): Commonness |
 // ── Resolve each tier's tables once ──────────────────────────────────────────
 interface ResolvedTier {
   modes: [Mode, number][];
-  sigs: [Fifths, number][];
+  sigs: Record<Mode, [Fifths, number][]>; // key signatures per mode (docs/09 §3.6)
   degrees: Record<Mode, [Fifths, number][]>;
   commonness: Partial<Record<Commonness, number>>;
   packs: [string, number][];
 }
 const degList = (d?: Record<string, number>): [Fifths, number][] =>
   d ? (Object.entries(d).map(([t, w]) => [degreeToFifths(t), w]) as [Fifths, number][]).filter(([, w]) => w > 0) : [];
+const sigList = (k?: Record<string, number>): [Fifths, number][] =>
+  k ? (Object.entries(k).map(([t, w]) => [keySig(t), w]) as [Fifths, number][]).filter(([, w]) => w > 0) : [];
 
 const TIER_R: Record<Tier, ResolvedTier> = (() => {
   const out = {} as Record<Tier, ResolvedTier>;
   for (const [tier, cfg] of Object.entries(TIERS) as [Tier, TierConfig][]) {
     out[tier] = {
       modes: (Object.entries(cfg.modes) as [Mode, number][]).filter(([, w]) => w > 0),
-      sigs: Object.entries(cfg.keys)
-        .map(([k, w]) => [keySig(k), w] as [Fifths, number])
-        .filter(([, w]) => w > 0),
+      sigs: { major: sigList(cfg.keys.major), minor: sigList(cfg.keys.minor) },
       degrees: { major: degList(cfg.degrees.major), minor: degList(cfg.degrees.minor) },
       commonness: cfg.commonness,
       packs: Object.entries(cfg.packs).filter(([, w]) => w > 0),
@@ -162,7 +162,7 @@ export function sampleHarmony(tier: Tier, rng: Rng): HarmonyPick {
   const mode = weightedPick(rng, rt.modes, ([, w]) => w)[0];
   const degree = weightedPick(rng, rt.degrees[mode], ([, w]) => w)[0];
   const { pattern } = weightedPick(rng, candidates(tier, mode, degree), (c) => c.weight);
-  const sig = weightedPick(rng, rt.sigs, ([, w]) => w)[0];
+  const sig = weightedPick(rng, rt.sigs[mode], ([, w]) => w)[0];
   return { pattern, rootNote: tonicNote(mode, sig) + degree, mode, degree, sig };
 }
 
@@ -171,9 +171,9 @@ export function sampleHarmony(tier: Tier, rng: Rng): HarmonyPick {
 export function configViolations(): string[] {
   const problems: string[] = [];
   for (const [tier, rt] of Object.entries(TIER_R) as [Tier, ResolvedTier][]) {
-    if (rt.sigs.length === 0) problems.push(`${tier}: no key signatures`);
     if (rt.modes.length === 0) problems.push(`${tier}: no modes`);
     for (const [mode] of rt.modes) {
+      if (rt.sigs[mode].length === 0) problems.push(`${tier}/${mode}: no key signatures`);
       const degs = rt.degrees[mode];
       if (degs.length === 0) {
         problems.push(`${tier}/${mode}: mode enabled but no degrees`);
