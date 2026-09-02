@@ -562,20 +562,24 @@ export const SCALE_DEGREE_TONE_SETS: Record<Mode, Record<string, ToneSetRef[]>> 
 
 // ── Difficulty tiers ─────────────────────────────────────────────────────────
 // Each tier lists exactly what's on and its weight — gating and weighting unified.
-// `modes` and `degrees` weights are the tuning-pass estimates of how often each
-// mode / scale-degree root is actually heard; later tiers open up more degrees
-// (and keys/packs). Key, pack, and commonness weights are still rough. Degree
-// weights are relative (they are normalized at pick time), anchored tonic = 100.
+// Provenance of the weights:
+//  • modes, commonness, packs — a pedagogical curriculum pass (how a teacher would
+//    allocate a beginner/intermediate/advanced/expert player's drilling time):
+//    one framework then toward parity; a widening commonness ladder; packs as the
+//    primary shape-difficulty ladder (intervals+triads → 7ths/6ths/sus → rooted
+//    extensions → re-voicings, expert-only).
+//  • degrees, keys — owner-hand-tuned (seeded from heard-frequency estimates).
+// All weights are relative (normalized at pick time; degrees anchored tonic = 100).
 export const TIERS: Record<Tier, TierConfig> = {
   easy: {
     modes: { major: 1 }, // major only
     keys: { major: { all_natural: 100, '1_sharp': 95, '1_flat': 85 } },
     degrees: { major: { '1': 100, '5': 88, '4': 80, '6': 46, '2': 42 } },
     commonness: { ultra: 1 },
-    packs: { simple_intervals: 3, triads: 10 },
+    packs: { simple_intervals: 5, triads: 8 },
   },
   medium: {
-    modes: { major: 0.65, minor: 0.35 },
+    modes: { major: 0.7, minor: 0.3 },
     keys: {
       major: { all_natural: 100, '1_sharp': 95, '2_sharp': 80, '3_sharp': 60, '1_flat': 85, '2_flat': 78, '3_flat': 55 },
       minor: { all_natural: 100, '1_sharp': 98, '2_sharp': 55, '3_sharp': 40, '1_flat': 92, '2_flat': 70, '3_flat': 62 },
@@ -585,10 +589,10 @@ export const TIERS: Record<Tier, TierConfig> = {
       minor: { '1': 100, '5': 80, '♭7': 55, '4': 55, '♭6': 50, '♭3': 48, '2': 24, '7': 16 },
     },
     commonness: { ultra: 1, very: 0.5 },
-    packs: { simple_intervals: 3, tritone_intervals: 1.5, triads: 10, suspended_triads: 3, sevenths: 8, sixths: 5, pentatonic_scales: 2 },
+    packs: { simple_intervals: 3, triads: 8, tritone_intervals: 1.5, sevenths: 8, sixths: 4, suspended_triads: 3, pentatonic_scales: 2 },
   },
   hard: {
-    modes: { major: 0.65, minor: 0.35 },
+    modes: { major: 0.6, minor: 0.4 },
     keys: {
       major: { all_natural: 100, '1_sharp': 95, '2_sharp': 80, '3_sharp': 60, '4_sharp': 42, '1_flat': 85, '2_flat': 78, '3_flat': 55, '4_flat': 28 },
       minor: { all_natural: 100, '1_sharp': 98, '2_sharp': 55, '3_sharp': 40, '4_sharp': 35, '1_flat': 92, '2_flat': 70, '3_flat': 62, '4_flat': 38 },
@@ -597,14 +601,14 @@ export const TIERS: Record<Tier, TierConfig> = {
       major: { '1': 100, '5': 88, '4': 80, '6': 46, '2': 42, '3': 13, '7': 11, '♭7': 16, '♭6': 8, '♭3': 7 },
       minor: { '1': 100, '5': 80, '♭7': 55, '4': 55, '♭6': 50, '♭3': 48, '2': 24, '7': 16, '♭2': 5 },
     },
-    commonness: { ultra: 1, very: 0.7, somewhat: 0.4 },
+    commonness: { ultra: 1, very: 0.7, somewhat: 0.5 },
     packs: {
       simple_intervals: 3, tritone_intervals: 1.5, augmented_diminished_intervals: 1, triads: 10,
-      suspended_triads: 3, sevenths: 8, sixths: 5, pentatonic_scales: 2, extended_chords: 5, altered_dominants: 3,
+      suspended_triads: 3, sevenths: 8, sixths: 5, pentatonic_scales: 2, extended_chords: 4, altered_dominants: 3,
     },
   },
   expert: {
-    modes: { major: 0.65, minor: 0.35 },
+    modes: { major: 0.5, minor: 0.5 },
     keys: {
       major: { all_natural: 100, '1_sharp': 95, '2_sharp': 80, '3_sharp': 60, '4_sharp': 42, '5_sharp': 12, '6_sharp': 3, '1_flat': 85, '2_flat': 78, '3_flat': 55, '4_flat': 28, '5_flat': 18, '6_flat': 4 },
       minor: { all_natural: 100, '1_sharp': 98, '2_sharp': 55, '3_sharp': 40, '4_sharp': 35, '5_sharp': 10, '6_sharp': 2, '1_flat': 92, '2_flat': 70, '3_flat': 62, '4_flat': 38, '5_flat': 20, '6_flat': 8 },
@@ -613,7 +617,7 @@ export const TIERS: Record<Tier, TierConfig> = {
       major: { '1': 100, '5': 88, '4': 80, '6': 46, '2': 42, '3': 13, '7': 11, '♭7': 16, '♭6': 8, '♭3': 7, '♭2': 1.5, '♯4': 2 },
       minor: { '1': 100, '5': 80, '♭7': 55, '4': 55, '♭6': 50, '♭3': 48, '2': 24, '7': 16, '♭2': 5, '6': 4, '♯4': 2 },
     },
-    commonness: { ultra: 1, very: 0.8, somewhat: 0.6, occasional: 0.3 },
+    commonness: { ultra: 1, very: 0.85, somewhat: 0.65, occasional: 0.35 },
     packs: {
       simple_intervals: 3, tritone_intervals: 1.5, augmented_diminished_intervals: 1, triads: 10,
       suspended_triads: 3, sevenths: 8, sixths: 5, pentatonic_scales: 2, extended_chords: 5, altered_dominants: 3,
