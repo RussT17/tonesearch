@@ -20,12 +20,12 @@ function logoSvg(w, h, markFrac) {
   const mark = Math.round(Math.min(w, h) * markFrac);
   const s = mark / Math.SQRT2; // side of the (unrotated) square whose diagonal is `mark`
   const sw = Math.max(2, mark * 0.045);
-  const blur = mark * 0.03;
+  const blur = mark * 0.05; // softer/wider glow → smooth falloff even at small sizes
   const rx = s * 0.16;
   const fs = mark * 0.34;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
   <rect width="${w}" height="${h}" fill="${BG}"/>
-  <defs><filter id="g" x="-70%" y="-70%" width="240%" height="240%">
+  <defs><filter id="g" x="-120%" y="-120%" width="340%" height="340%">
     <feGaussianBlur stdDeviation="${blur}" result="b"/>
     <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
   </filter></defs>
@@ -43,10 +43,10 @@ await mkdir('public/splash', { recursive: true });
 // canvas-rendered art, whose left/right diamond corners were rounded tighter than
 // the top/bottom ones (unequal rx/ry). This SVG mark is a true rounded square, so
 // all four corners match.
-await render(192, 192, 0.78, 'public/icon-192.png');
-await render(512, 512, 0.78, 'public/icon-512.png');
-await render(1024, 1024, 0.78, 'public/icon-1024.png');
-await render(180, 180, 0.76, 'public/apple-touch-icon.png');
+await render(192, 192, 0.72, 'public/icon-192.png');
+await render(512, 512, 0.72, 'public/icon-512.png');
+await render(1024, 1024, 0.72, 'public/icon-1024.png');
+await render(180, 180, 0.7, 'public/apple-touch-icon.png');
 
 // Maskable icons: the mark padded to ~60% of the square, well inside the maskable
 // safe zone, so Android's adaptive-icon / splash crop no longer zooms or clips it.
