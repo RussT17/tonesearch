@@ -38,6 +38,16 @@ const render = (w, h, frac, file) => sharp(Buffer.from(logoSvg(w, h, frac))).png
 
 await mkdir('public/splash', { recursive: true });
 
+// Full-bleed "any" launcher icons (home screen where not masked, app switcher,
+// install dialog, favicon). The mark fills ~78% of the square — replaces the old
+// canvas-rendered art, whose left/right diamond corners were rounded tighter than
+// the top/bottom ones (unequal rx/ry). This SVG mark is a true rounded square, so
+// all four corners match.
+await render(192, 192, 0.78, 'public/icon-192.png');
+await render(512, 512, 0.78, 'public/icon-512.png');
+await render(1024, 1024, 0.78, 'public/icon-1024.png');
+await render(180, 180, 0.76, 'public/apple-touch-icon.png');
+
 // Maskable icons: the mark padded to ~60% of the square, well inside the maskable
 // safe zone, so Android's adaptive-icon / splash crop no longer zooms or clips it.
 await render(512, 512, 0.6, 'public/icon-512-maskable.png');
