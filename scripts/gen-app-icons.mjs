@@ -46,10 +46,12 @@ const css = await readFile(join(ROOT, 'src/style.css'), 'utf8');
 /**
  * The page: the app's real stylesheet, one real `.cell.selected`, on the app's
  * real body background. `markFrac` is the diamond's point-to-point width as a
- * fraction of the canvas's shorter side.
+ * fraction of the canvas's shorter side. `nudge` optically centers the glyph
+ * (see measureGlyphNudge).
  */
-const page = (w, h, markFrac) => {
+const page = (w, h, markFrac, nudge = 0) => {
   const scale = (Math.min(w, h) * markFrac) / REF_DIAG;
+  const fontPx = REF_SIDE * GLYPH_RATIO;
   return `<!doctype html><html><head><meta charset="utf-8"><style>
 ${css}
 /* --- icon harness (not part of the app) --- */
@@ -59,26 +61,63 @@ body { display: grid; place-items: center; }
    stay in the same ratio to the tile as they are in the running game. */
 .mark { transform: scale(${scale}); transform-origin: center; }
 .mark .cell { position: relative; width: ${REF_SIDE}px; height: ${REF_SIDE}px; }
-.mark .glyph { font-size: ${REF_SIDE * GLYPH_RATIO}px; }
+/* The translate is applied BEFORE the counter-rotation, and the cell's own
+   +45° cancels the glyph's -45°, so this reads as a true straight-down shift
+   on screen rather than a diagonal one. */
+.mark .glyph {
+  font-size: ${fontPx}px;
+  transform: rotate(-45deg) translateY(${nudge * fontPx}px);
+}
 </style></head><body>
 <div class="mark"><div class="cell selected"><span class="glyph">${MARK_TEXT}</span></div></div>
 </body></html>`;
 };
+
+/**
+ * How far to drop the glyph so its INK is centered, as a fraction of font size.
+ *
+ * `place-items: center` centers the text's line box, not the letters inside it.
+ * A line box reserves descender room, and "TS" has no descenders, so the visible
+ * mass hangs above centre. Measure the real ink box and correct by the exact
+ * difference — the numbers are font-specific, so this is measured on whatever
+ * font the machine resolved rather than hardcoded.
+ */
+async function measureGlyphNudge(tab) {
+  await tab.setContent(page(400, 400, 0.6));
+  await tab.evaluate(() => document.fonts.ready);
+  return tab.evaluate(() => {
+    const g = document.querySelector('.glyph');
+    const cs = getComputedStyle(g);
+    const size = parseFloat(cs.fontSize);
+    const c = document.createElement('canvas').getContext('2d');
+    c.font = `${cs.fontWeight} ${size}px ${cs.fontFamily}`;
+    const m = c.measureText(g.textContent);
+    // Baseline offset inside a line-height:1 box, then the ink centre against it.
+    const half = (size - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2;
+    const baseline = half + m.fontBoundingBoxAscent;
+    const inkCentre = baseline + (m.actualBoundingBoxDescent - m.actualBoundingBoxAscent) / 2;
+    return (size / 2 - inkCentre) / size;
+  });
+}
 
 const browser = await chromium.launch(
   process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {},
 );
 const tab = await browser.newPage();
 
+const nudge = await measureGlyphNudge(tab);
+
 let reportedFont = null;
 const render = async (w, h, markFrac, file) => {
   await tab.setViewportSize({ width: w, height: h });
-  await tab.setContent(page(w, h, markFrac), { waitUntil: 'load' });
+  await tab.setContent(page(w, h, markFrac, nudge), { waitUntil: 'load' });
   await tab.evaluate(() => document.fonts.ready);
   reportedFont ??= await tab.evaluate(() => {
     const el = document.querySelector('.glyph');
-    // The stack as authored, plus what the box actually rendered with.
-    return getComputedStyle(el).fontFamily;
+    const cs = getComputedStyle(el);
+    // Which family actually won, and the weight the face resolved to — a stack
+    // without a 600 face silently snaps to 700.
+    return `${cs.fontFamily} @ ${cs.fontWeight}`;
   });
   await tab.screenshot({ path: join(ROOT, file), type: 'png' });
 };
@@ -93,10 +132,13 @@ await render(512, 512, 0.64, 'public/icon-512.png');
 await render(1024, 1024, 0.64, 'public/icon-1024.png');
 await render(180, 180, 0.62, 'public/apple-touch-icon.png');
 
-// Maskable icons: Android may crop to a circle of 80% diameter and zoom, so the
-// mark is pulled in to ~50% to sit entirely inside that safe zone.
-await render(512, 512, 0.5, 'public/icon-512-maskable.png');
-await render(1024, 1024, 0.5, 'public/icon-1024-maskable.png');
+// Maskable icons: Android crops to a shape inscribed in a circle of 80% diameter
+// and zooms, which shrinks the mark on screen — so these are drawn LARGER than
+// the "any" icons to compensate, not smaller. At 75% the diamond's points sit
+// 0.375·w from centre, just inside the 0.4·w safe radius; the glow spills past
+// it but a soft bloom is the one thing that crops gracefully.
+await render(512, 512, 0.75, 'public/icon-512-maskable.png');
+await render(1024, 1024, 0.75, 'public/icon-1024-maskable.png');
 
 // Favicon: a 32px PNG beats the hand-drawn inline SVG in index.html, which was a
 // separate drawing of the diamond and did not track the app's styling.
