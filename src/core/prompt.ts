@@ -15,7 +15,6 @@ import { degreeName, keyName } from './theory';
 // ── Interval constants on the line of fifths (see theory.ts) ────────────────
 const M3 = 4;
 const m3 = -3;
-const P5 = 1;
 const d5 = -6;
 const A5 = 8;
 const m7 = -2;
@@ -59,7 +58,7 @@ export function romanNumeral(pattern: Pattern, degree: Fifths): string | null {
   const minor = has(m3);
   if (major === minor) return null; // no third, or (impossibly) both → don't guess
 
-  let numeral = ROMAN[num - 1]!;
+  let numeral: string = ROMAN[num - 1]!;
   if (minor) numeral = numeral.toLowerCase();
 
   // Quality suffix, most specific first.
