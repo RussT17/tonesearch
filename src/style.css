@@ -153,7 +153,12 @@ body {
   line-height: 1;
   white-space: nowrap;
 }
+/* Selected cells are lit the same in both views. A selected grid cell is not
+   .clickable (game.ts drops that once it's in the selection), so it would fall
+   back to .cell's dim idle border while its target twin — always .token-diamond
+   — kept the bright one; state the border here so both light up identically. */
 .cell.selected {
+  border-color: var(--neon);
   background: rgba(199, 125, 255, 0.28);
   box-shadow: 0 0 14px var(--neon), inset 0 0 10px var(--neon-dim);
 }
