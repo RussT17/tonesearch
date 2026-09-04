@@ -254,6 +254,41 @@ export function playChord(notes: readonly Fifths[], when = 0): void {
   });
 }
 
+/**
+ * The same chord and run, but at pitches the caller has already decided.
+ *
+ * ToneSearch folds every note into one reference octave — its diamonds carry no
+ * octave, so there is nothing to be faithful to. ToneScribe writes the octave
+ * down, so it must sound where it is written; these take real MIDI notes rather
+ * than deriving them from pitch classes.
+ */
+export function playChordMidi(midis: readonly number[], when = 0): void {
+  if (muted) return;
+  whenRunning((c) => {
+    for (const m of midis) playFreq(c, midiToFreq(m), when, 0.16, CHORD_DECAY);
+  });
+}
+
+export function playScaleRunMidi(midis: readonly number[], when = 0, step = 0.07): void {
+  if (muted) return;
+  whenRunning((c) => {
+    midis.forEach((m, i) => playFreq(c, midiToFreq(m), when + i * step, 0.26));
+  });
+}
+
+/** Sound an implied root beneath a written voicing, an octave or so below
+ * `reference` — the MIDI counterpart of playRootBass. */
+export function playRootBassNear(
+  rootFifths: Fifths,
+  reference: number,
+  when = 0,
+  decay = BASS.decay,
+): void {
+  if (muted) return;
+  const freq = midiToFreq(seatNearAnchor(pitchClass(rootFifths), reference - 12));
+  whenRunning((c) => playFreq(c, freq, when, BASS.peak, decay, bassVoice(c)));
+}
+
 /** Play the notes as a quick ascending run (for scales) rather than a struck
  * chord — a light flourish up the scale, voiced like the arpeggio. */
 export function playScaleRun(notes: readonly Fifths[], when = 0, step = 0.07): void {

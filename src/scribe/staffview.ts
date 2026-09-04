@@ -8,6 +8,7 @@
 import {
   bottomLineStep,
   keySignatureMarks,
+  ledgerLinesIn,
   playableRange,
   type Accidental,
   type Clef,
@@ -106,6 +107,18 @@ export function renderStaff(
     el('rect', { class: 'band', x: slotsX0 - 4, y: bandTop, width: width - slotsX0 - PAD_L + 8, height: bandBottom - bandTop, rx: 3 }),
     el('rect', { class: 'band-edge', x: slotsX0 - 4, y: bandTop, width: width - slotsX0 - PAD_L + 8, height: bandBottom - bandTop, rx: 3 }),
   );
+
+  // Ledger lines the band reaches, drawn BEFORE anything is written. Engraving
+  // only draws these under a note, but a player needs something to aim at — with
+  // nothing there, placing a note above the staff is guesswork.
+  for (const ls of ledgerLinesIn(range, clef)) {
+    for (let i = 0; i < slotCount; i++) {
+      svg.append(el('line', {
+        class: 'ledger-guide',
+        x1: slotX(i) - 11, y1: y(ls), x2: slotX(i) + 11, y2: y(ls),
+      }));
+    }
+  }
 
   for (let line = 0; line < 5; line++) {
     svg.append(el('line', { class: 'rule', x1: PAD_L, y1: 60 - line * GLYPH_SPACE, x2: width - PAD_L, y2: 60 - line * GLYPH_SPACE }));

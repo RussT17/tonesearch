@@ -46,6 +46,9 @@ export interface SessionApi {
   propose(note: Fifths): boolean;
   /** Drop back to the first `n` committed notes (tap-to-undo). */
   rewind(n: number): void;
+  /** Sound a candidate at an exact pitch, for a game that knows its octaves.
+   * Adds the implied bass under a rootless voicing, as `voice` does. */
+  voiceMidi(midi: number): void;
 }
 
 /** Everything that differs between the two games. */
@@ -65,6 +68,9 @@ export interface GameDef<R extends Round> {
   newRound(tier: Tier): R;
   /** The line under the target sequence. */
   caption(round: R): string;
+  /** The sounding pitches for `notes` in this round, when the game pins octaves.
+   * Absent for ToneSearch, whose notes carry no octave to be faithful to. */
+  midisFor?: (round: R, notes: readonly Fifths[]) => number[];
   createBoard(shell: Shell, api: SessionApi): Board<R>;
 }
 
@@ -108,6 +114,13 @@ export function startSession<R extends Round>(root: HTMLElement, def: GameDef<R>
     audio.playRootBass(seq[0]! - iv[0]!, seq, when);
   };
 
+  /** The written-pitch counterpart of rootlessBass. */
+  const rootlessBassMidi = (midis: readonly number[], when = 0): void => {
+    const iv = round.pattern.intervals;
+    if (iv.includes(0) || midis.length === 0 || notes.length === 0) return;
+    audio.playRootBassNear(notes[0]! - iv[0]!, midis[0]!, when);
+  };
+
   /** Push current progress to both views: the board and the target row. */
   const paint = (): void => {
     board.paint(notes);
@@ -137,6 +150,14 @@ export function startSession<R extends Round>(root: HTMLElement, def: GameDef<R>
       if (phase !== 'playing') return;
       notes = notes.slice(0, n);
       paint();
+    },
+    voiceMidi(midi) {
+      audio.playNoteMidi(midi);
+      const iv = round.pattern.intervals;
+      if (!iv.includes(0) && notes.length > 0) {
+        // Rootless voicing: ground it, seated below the pitch just heard.
+        audio.playRootBassNear(notes[0]! - iv[0]!, midi);
+      }
     },
   };
 
@@ -181,8 +202,14 @@ export function startSession<R extends Round>(root: HTMLElement, def: GameDef<R>
     // generator's) so the chord matches the arpeggio they just heard.
     // Match the give-up gap between the final note and the chord: reveal waits
     // one arpeggio step (520ms) + 170ms after the last note ≈ 690ms.
+    const midis = def.midisFor?.(round, notes);
     if (round.pattern.kind === 'scale') {
-      audio.playScaleRun(notes, 0.69); // a quick run up instead of a chord
+      // a quick run up instead of a chord
+      if (midis) audio.playScaleRunMidi(midis, 0.69);
+      else audio.playScaleRun(notes, 0.69);
+    } else if (midis) {
+      audio.playChordMidi(midis, 0.69);
+      rootlessBassMidi(midis, 0.69);
     } else {
       audio.playChord(notes, 0.69);
       rootlessBass(notes, 0.69);
@@ -207,17 +234,29 @@ export function startSession<R extends Round>(root: HTMLElement, def: GameDef<R>
     answer.forEach((_n, i) => {
       setTimeout(() => {
         notes = answer.slice(0, i + 1);
-        audio.playNoteMidi(lastVoiced(notes));
-        rootlessBass(notes);
+        const m = def.midisFor?.(round, notes);
+        if (m) {
+          audio.playNoteMidi(m[m.length - 1]!);
+          rootlessBassMidi(m);
+        } else {
+          audio.playNoteMidi(lastVoiced(notes));
+          rootlessBass(notes);
+        }
         paint();
       }, i * stepMs);
     });
     const arped = answer.length * stepMs;
     setTimeout(() => {
+      const midis = def.midisFor?.(round, answer);
       if (round.pattern.kind === 'scale') {
-        audio.playScaleRun(answer, 0.05); // cap the reveal with a quick run up
+        // cap the reveal with a quick run up
+        if (midis) audio.playScaleRunMidi(midis, 0.05);
+        else audio.playScaleRun(answer, 0.05);
+      } else if (midis) {
+        audio.playChordMidi(midis, 0.05); // then the chord
+        rootlessBassMidi(midis, 0.05);
       } else {
-        audio.playChord(answer, 0.05); // then the chord
+        audio.playChord(answer, 0.05);
         rootlessBass(answer, 0.05);
       }
     }, arped + 120);

@@ -12,7 +12,7 @@
 // part of it. The board rejects a note written on the wrong line before the
 // session ever sees it.
 
-import { noteAt, type Accidental, type Step } from '../core/staff';
+import { midiOf, noteAt, type Accidental, type Step } from '../core/staff';
 import * as audio from '../shell/audio';
 import type { Shell } from '../shell/chrome';
 import type { Board, SessionApi } from '../shell/session';
@@ -122,7 +122,9 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
     const previous = written;
     written = [...written, { step, acc: armed }];
     repaint();
-    api.voice(note); // right or wrong, so the tap feels immediate
+    // Sound the pitch actually written — the tapped step's octave, right or
+    // wrong — rather than a pitch class folded into a reference octave.
+    api.voiceMidi(midiOf(step, note));
 
     // The line matters as much as the letter: a right note written an octave off
     // is wrong here, and the session's root-relative check would accept it.

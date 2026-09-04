@@ -24,6 +24,8 @@ const toneScribe: GameDef<ScribeRound> = {
     round.pattern.kind === 'note'
       ? ''
       : `${round.pattern.display} ${categoryLabel(round.pattern.kind)}`,
+  // The staff writes the octave down, so it must sound where it is written.
+  midisFor: (round, notes) => notes.map((_n, i) => round.solutionMidis[i]!),
   createBoard: createStaffBoard,
 };
 

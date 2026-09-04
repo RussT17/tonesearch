@@ -120,6 +120,13 @@
   stroke-width: 1.1;
   shape-rendering: crispEdges; /* hairlines stay even at any scale */
 }
+/* Ledger lines the band offers but nothing occupies yet — visible enough to aim
+   at, faint enough not to read as notes. */
+.staff .ledger-guide {
+  stroke: var(--band-edge);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
 .staff .ledger {
   stroke: var(--rule);
   stroke-width: 1.3;

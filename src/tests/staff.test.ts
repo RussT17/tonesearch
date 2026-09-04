@@ -8,6 +8,8 @@ import {
   naturalAt,
   naturalOf,
   noteAt,
+  ledgerLinesIn,
+  midiOf,
   pickRange,
   playableRange,
   stepOf,
@@ -176,7 +178,7 @@ describe('the written range', () => {
     for (const clef of clefs) {
       const playable = playableRange(clef);
       for (let i = 0; i < 200; i++) {
-        const r = pickRange([C, E, G], clef, rng);
+        const r = pickRange([C, E, G], rng, playableRange(clef));
         expect(r.lo).toBeGreaterThanOrEqual(playable.lo);
         expect(r.hi).toBeLessThanOrEqual(playable.hi);
       }
@@ -191,7 +193,7 @@ describe('the written range', () => {
       for (let i = 0; i < 60; i++) {
         const puzzle = generatePuzzle(configFor(tier), 1000 + i);
         for (const clef of clefs) {
-          const range = pickRange(puzzle.solutionNotes, clef, rng);
+          const range = pickRange(puzzle.solutionNotes, rng, playableRange(clef));
           const starts = validStarts(puzzle.solutionNotes, range);
           expect(starts).toHaveLength(1);
         }
@@ -199,10 +201,47 @@ describe('the written range', () => {
     }
   });
 
+  // The band should be as generous as it can be: a tight one makes placement a
+  // formality, and a single-note round with a one-step band gives the answer away.
+  it('is as wide as uniqueness allows', () => {
+    const rng = makeRng(17);
+    for (const notes of [[C], [C, E, G], [C, E, G, B]]) {
+      const span = writtenSpan(notes);
+      const r = pickRange(notes, rng, playableRange('treble'));
+      expect(r.hi - r.lo).toBe(span + 6); // the widest band that still has one answer
+      expect(validStarts(notes, r)).toHaveLength(1);
+    }
+  });
+
+  it('gives a single note a whole seven steps, not one', () => {
+    const rng = makeRng(23);
+    for (let i = 0; i < 50; i++) {
+      const r = pickRange([G], rng, playableRange('treble'));
+      expect(r.hi - r.lo).toBe(6);
+      expect(validStarts([G], r)).toHaveLength(1);
+    }
+  });
+
+  it('still admits exactly one answer when the allowance is tight', () => {
+    const rng = makeRng(29);
+    // Easy's allowance: the staff itself, nine steps, no ledger lines.
+    const staffOnly = playableRange('treble', 0);
+    // Only shapes that can sit between the lines at all — C–E–G–B cannot, in
+    // either octave, which is why round.ts widens rather than trusting the span.
+    for (const notes of [[E, G], [E, G, B], [G, B, D]]) {
+      for (let i = 0; i < 30; i++) {
+        const r = pickRange(notes, rng, staffOnly);
+        expect(validStarts(notes, r)).toHaveLength(1);
+        expect(r.lo).toBeGreaterThanOrEqual(staffOnly.lo);
+        expect(r.hi).toBeLessThanOrEqual(staffOnly.hi);
+      }
+    }
+  });
+
   it('ranges over the staff instead of hugging the middle', () => {
     const rng = makeRng(5);
     const los = new Set<number>();
-    for (let i = 0; i < 300; i++) los.add(pickRange([C, E, G], 'treble', rng).lo);
+    for (let i = 0; i < 300; i++) los.add(pickRange([C, E, G], rng, playableRange('treble')).lo);
     expect(los.size).toBeGreaterThan(6); // many different heights, incl. ledger territory
   });
 
@@ -212,12 +251,48 @@ describe('the written range', () => {
     let below = false;
     let above = false;
     for (let i = 0; i < 500; i++) {
-      const r = pickRange([C, E, G], 'treble', rng);
+      const r = pickRange([C, E, G], rng, playableRange('treble'));
       if (r.lo < bottom) below = true;
       if (r.hi > bottom + 8) above = true;
     }
     expect(below).toBe(true);
     expect(above).toBe(true);
+  });
+});
+
+describe('ledger guides', () => {
+  it('lists the line steps outside the staff, and none inside it', () => {
+    const bottom = bottomLineStep('treble');
+    const inside = ledgerLinesIn({ lo: bottom, hi: bottom + 8 }, 'treble');
+    expect(inside).toEqual([]);
+    const above = ledgerLinesIn({ lo: bottom + 8, hi: bottom + 12 }, 'treble');
+    expect(above).toEqual([bottom + 10, bottom + 12]);
+    const below = ledgerLinesIn({ lo: bottom - 4, hi: bottom }, 'treble');
+    expect(below).toEqual([bottom - 4, bottom - 2]);
+  });
+});
+
+describe('sounding pitch', () => {
+  it('gives each staff position its real MIDI note', () => {
+    expect(midiOf(stepOf(C, 4), C)).toBe(60); // middle C
+    expect(midiOf(stepOf(A, 4), A)).toBe(69); // A440
+    expect(midiOf(stepOf(G, 2), G)).toBe(43); // bottom line of the bass staff
+    expect(midiOf(stepOf(E, 4), E)).toBe(64); // bottom line of the treble staff
+  });
+
+  it('follows the written accidental, not the letter', () => {
+    expect(midiOf(stepOf(F, 4), F + 7)).toBe(66); // F♯4
+    expect(midiOf(stepOf(B, 4), B - 7)).toBe(70); // B♭4
+  });
+
+  // The point of octaves: the same spelling in two registers must not sound the same.
+  it('separates octaves that a pitch-class playback would fold', () => {
+    expect(midiOf(stepOf(C, 5), C) - midiOf(stepOf(C, 4), C)).toBe(12);
+    expect(midiOf(stepOf(G, 3), G) - midiOf(stepOf(G, 2), G)).toBe(12);
+  });
+
+  it('spells enharmonics as the same sounding pitch', () => {
+    expect(midiOf(stepOf(F, 4), F + 7)).toBe(midiOf(stepOf(G, 4), G - 7)); // F♯4 = G♭4
   });
 });
 
@@ -227,7 +302,7 @@ describe('round trip', () => {
     for (let i = 0; i < 120; i++) {
       const puzzle = generatePuzzle(configFor('hard'), 500 + i);
       const clef: Clef = i % 2 ? 'treble' : 'bass';
-      const range = pickRange(puzzle.solutionNotes, clef, rng);
+      const range = pickRange(puzzle.solutionNotes, rng, playableRange(clef));
       const start = validStarts(puzzle.solutionNotes, range)[0]!;
       const steps = ascendingSteps(puzzle.solutionNotes, start);
       steps.forEach((step, k) => {

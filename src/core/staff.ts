@@ -113,6 +113,22 @@ export const writtenSpan = (notes: readonly Fifths[]): number => {
   return steps[steps.length - 1]! - steps[0]!;
 };
 
+// Semitones above C for each letter, in staff order (C D E F G A B).
+const SEMITONE_BY_LETTER: readonly number[] = [0, 2, 4, 5, 7, 9, 11];
+
+/**
+ * The sounding MIDI note of a notehead: its real pitch, octave included.
+ *
+ * ToneSearch never needed this — its diamonds are octave-free, so playback folds
+ * every note into one reference octave. On a staff the octave is written down,
+ * so a note has to sound where it is written or the ear and the eye disagree.
+ */
+export function midiOf(step: Step, note: Fifths): number {
+  const octave = Math.floor(step / 7);
+  const alteration = (note - naturalAt(step)) / 7; // sharps (+) or flats (−)
+  return 12 * (octave + 1) + SEMITONE_BY_LETTER[mod(step, 7)]! + alteration;
+}
+
 // ── Clefs ───────────────────────────────────────────────────────────────────
 // The step sitting on the bottom line: treble E4, bass G2.
 const BOTTOM_LINE: Record<Clef, Step> = { treble: 4 * 7 + 2, bass: 2 * 7 + 4 };
@@ -133,47 +149,8 @@ export interface StaffRange {
   hi: Step;
 }
 
-/**
- * Pick the band for a round: wide enough to hold the written notes with a
- * little slack, narrow enough that only one octave placement fits, and set at a
- * random height so play ranges over the staff and its ledger lines rather than
- * sitting in the comfortable middle every time.
- *
- * Slack stays under 7 on purpose. At 7 the same shape would fit an octave up as
- * well, and the round would have two right answers.
- */
-export function pickRange(
-  notes: readonly Fifths[],
-  clef: Clef,
-  rng: Rng,
-  ledger = 3,
-): StaffRange {
-  const span = writtenSpan(notes);
-  const playable = playableRange(clef, ledger);
-
-  // Choose where the FIRST note actually lands, not an arbitrary window that the
-  // notes then have to fit into. Only steps carrying the first note's letter can
-  // hold it, and they recur every 7 — so a window picked independently can
-  // easily contain none of them and admit no answer at all.
-  const letter = staffLetter(notes[0] ?? 0);
-  const starts: Step[] = [];
-  for (let s = playable.lo; s + span <= playable.hi; s++) {
-    if (mod(s, 7) === letter) starts.push(s);
-  }
-  if (starts.length === 0) return { lo: playable.lo, hi: playable.hi }; // unreachable in practice
-  const first = pick(rng, starts);
-
-  // Pad the band by up to 5 steps split above and below. Staying under 7 keeps
-  // the answer unique: at 7 the same shape would also fit an octave away.
-  const total = randInt(rng, 0, 6); // 0…5
-  const below = randInt(rng, 0, total + 1);
-  const lo = Math.max(playable.lo, first - below);
-  const hi = Math.min(playable.hi, first + span + (total - below));
-  return { lo, hi };
-}
-
 /** Where `notes` could legally start inside `range` — one entry per distinct
- * placement. Used to assert the answer is unique, and to judge an attempt. */
+ * placement. The band is sized so this has exactly one element. */
 export function validStarts(notes: readonly Fifths[], range: StaffRange): Step[] {
   if (notes.length === 0) return [];
   const span = writtenSpan(notes);
@@ -181,6 +158,52 @@ export function validStarts(notes: readonly Fifths[], range: StaffRange): Step[]
   const out: Step[] = [];
   for (let s = range.lo; s + span <= range.hi; s++) {
     if (mod(s, 7) === letter) out.push(s); // its letter, and the rest fits above
+  }
+  return out;
+}
+
+/**
+ * The band a round must be written inside — as wide as it can be while still
+ * admitting exactly one answer, positioned at random within `allowed`.
+ *
+ * Width is what makes this non-obvious. The first note can only sit on steps
+ * carrying its letter, and those recur every 7, so a band whose start-window is
+ * 7 steps long holds exactly one of them. That caps the band at `span + 6`: the
+ * widest one that cannot fit the same shape twice, and the reason a single-note
+ * round gets a seven-step band rather than a one-step giveaway.
+ *
+ * It works outward from a placement rather than picking a band and hoping the
+ * notes fit. Sizing first and searching after fails exactly where it matters —
+ * a tight allowance often has no offset at all where the first note's letter
+ * lands in the window, and the round comes out unplayable.
+ */
+export function pickRange(
+  notes: readonly Fifths[],
+  rng: Rng,
+  allowed: { lo: Step; hi: Step },
+): StaffRange {
+  const span = writtenSpan(notes);
+  const starts = validStarts(notes, allowed);
+  if (starts.length === 0) return { ...allowed }; // caller must widen; see round.ts
+  const start = pick(rng, starts);
+
+  // Grow the band around that placement. `below + above ≤ 6` keeps the
+  // start-window at most 7 steps, which is what keeps the answer unique.
+  const roomBelow = Math.min(start - allowed.lo, 6);
+  const roomAbove = Math.min(allowed.hi - (start + span), 6);
+  const total = Math.min(6, roomBelow + roomAbove);
+  const below = randInt(rng, Math.max(0, total - roomAbove), Math.min(roomBelow, total) + 1);
+  return { lo: start - below, hi: start + span + (total - below) };
+}
+
+/** Line steps (not spaces) inside `range` that fall outside the staff — the
+ * ledger lines a player needs to see BEFORE writing, or there is nothing to aim
+ * at. Engraving draws these only under a note; placement needs them up front. */
+export function ledgerLinesIn(range: StaffRange, clef: Clef): Step[] {
+  const bottom = bottomLineStep(clef);
+  const out: Step[] = [];
+  for (let s = range.lo; s <= range.hi; s++) {
+    if (mod(s - bottom, 2) === 0 && (s < bottom || s > bottom + 8)) out.push(s);
   }
   return out;
 }
