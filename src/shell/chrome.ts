@@ -49,6 +49,19 @@ const el = <T extends HTMLElement>(tag: string, cls?: string, text?: string): T 
   return e;
 };
 
+/** How to install by hand, for browsers that will not offer to do it. Read off
+ * the user agent because there is nothing better: no API reports where a given
+ * browser keeps its install command, and a wrong instruction is worse than
+ * none — hence the vague last line rather than a guess. */
+function manualInstallStep(): string {
+  const ua = navigator.userAgent;
+  const iOS = /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (iOS) return 'To install: tap Share, then “Add to Home Screen”.';
+  if (/Android/.test(ua)) return 'To install: open the browser menu (the three dots), then “Install app”.';
+  return 'To install: use your browser’s menu — look for “Install”.';
+}
+
 /** Build the static app skeleton once; returns handles to the live regions. */
 export function mountShell(root: HTMLElement, bandLabel: string): Shell {
   root.innerHTML = '';
@@ -131,28 +144,63 @@ export function wireChrome(shell: Shell): void {
   paintMute(audio.isMuted());
 
   // PWA install: suppress the browser's automatic prompt and expose our own
-  // corner button instead, shown only while the app is installable.
+  // corner button instead.
+  //
+  // beforeinstallprompt cannot be the only way in. Safari has never fired it, and
+  // Chrome withholds it whenever it decides the page is already covered by an
+  // installed app — which is exactly ToneScribe's situation, since it lives at
+  // /tonesearch/scribe/, inside ToneSearch's own /tonesearch/ scope. So the
+  // button also appears without the event, and then says how to install by hand.
   let deferredPrompt: BeforeInstallPromptEvent | null = null;
   const standalone =
     window.matchMedia('(display-mode: standalone)').matches ||
     (navigator as unknown as { standalone?: boolean }).standalone === true;
+
+  const hide = (): void => {
+    shell.installBtn.classList.remove('show', 'manual');
+    tip.classList.remove('show');
+  };
+
+  // The by-hand instructions, which differ per browser and are useless if wrong.
+  const tip = el('div', 'install-tip', manualInstallStep());
+  tip.setAttribute('role', 'status');
+  shell.installBtn.after(tip);
+
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e as BeforeInstallPromptEvent;
-    if (!standalone) shell.installBtn.classList.add('show');
+    if (standalone) return;
+    // The browser will do it properly after all — drop the by-hand fallback.
+    shell.installBtn.classList.add('show');
+    shell.installBtn.classList.remove('manual');
+    tip.classList.remove('show');
   });
   shell.installBtn.onclick = () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      tip.classList.toggle('show'); // no prompt to offer: explain instead
+      return;
+    }
+    tip.classList.remove('show');
     void deferredPrompt.prompt();
     void deferredPrompt.userChoice.finally(() => {
       deferredPrompt = null;
-      shell.installBtn.classList.remove('show'); // one-shot; hide after the choice
+      hide(); // one-shot; hide after the choice
     });
   };
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
-    shell.installBtn.classList.remove('show');
+    hide();
   });
+
+  // Nothing offered the prompt, so offer the instructions. Late enough that a
+  // browser which was going to fire the event has had its chance — Chrome fires
+  // it once the worker is controlling, which is well inside this.
+  if (!standalone) {
+    setTimeout(() => {
+      if (deferredPrompt) return;
+      shell.installBtn.classList.add('show', 'manual');
+    }, 3000);
+  }
 
   // Stop the keep-alive in the background (let Bluetooth idle → save battery);
   // resume + restart it on return.

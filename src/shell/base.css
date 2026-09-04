@@ -255,6 +255,24 @@ body {
 }
 .install.show { display: inline-flex; }
 .install svg { width: 1rem; height: 1rem; }
+/* How to install by hand, when the browser will not offer to do it itself.
+   Sits above the button it belongs to, and only while asked for. */
+.install-tip {
+  position: fixed;
+  left: calc(0.5rem + env(safe-area-inset-left, 0px));
+  bottom: calc(3.1rem + env(safe-area-inset-bottom, 0px));
+  z-index: 20;
+  display: none;
+  max-width: min(20rem, calc(100vw - 1.5rem));
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--neon-mute);
+  border-radius: 8px;
+  background: var(--bg-2);
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+.install-tip.show { display: block; }
 .mute {
   right: calc(0.5rem + env(safe-area-inset-right, 0px));
   display: inline-flex;
