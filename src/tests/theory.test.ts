@@ -13,7 +13,7 @@ import {
   MODE_OFFSET,
   type Fifths,
   type Mode,
-} from '../theory';
+} from '../core/theory';
 
 // Ground-truth tables from docs/00-music-theory.md, extended past F♭…B♯ into the
 // double-accidental spellings the game actually produces (clamp is [−12,+12]).

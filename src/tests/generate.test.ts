@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { generatePuzzle, isSolution, isPrefix, type Puzzle } from '../generate';
-import { configFor } from '../config';
-import { type Tier } from '../pattern';
-import { footprint, aspect } from '../geometry';
+import { generatePuzzle, isSolution, isPrefix, type Puzzle } from '../core/generate';
+import { configFor } from '../core/config';
+import { type Tier } from '../core/pattern';
+import { footprint, aspect } from '../core/geometry';
 
 const TIERS: Tier[] = ['easy', 'medium', 'hard', 'expert'];
 const SEEDS = Array.from({ length: 150 }, (_, i) => i);

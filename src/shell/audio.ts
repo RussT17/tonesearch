@@ -5,8 +5,8 @@
 // Bluetooth link + audio clock awake during play, and ② a burst guard that drops
 // a note rather than queueing it when it detects the clock has frozen.
 
-import { pitchClass } from './theory';
-import type { Fifths } from './theory';
+import { pitchClass } from '../core/theory';
+import type { Fifths } from '../core/theory';
 
 const MUTE_KEY = 'tonesearch.muted';
 const BASE_MIDI = 60; // C4 — the fixed reference octave (docs §6/E3)

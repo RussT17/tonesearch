@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { latticeToScreen, footprint, aspect } from '../geometry';
+import { latticeToScreen, footprint, aspect } from '../core/geometry';
 
 describe('geometry (45° lattice)', () => {
   it('maps the lattice via the 45° rotation', () => {

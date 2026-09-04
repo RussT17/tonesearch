@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { type Tier } from '../pattern';
-import { PACK_LIST, ALL_PATTERNS, commonness, sampleHarmony, configViolations } from '../harmony';
-import { makeRng } from '../rng';
+import { type Tier } from '../core/pattern';
+import { PACK_LIST, ALL_PATTERNS, commonness, sampleHarmony, configViolations } from '../core/harmony';
+import { makeRng } from '../core/rng';
 
 const TIERS: Tier[] = ['easy', 'medium', 'hard', 'expert'];
 

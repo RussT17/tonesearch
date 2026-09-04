@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { updateSelection } from '../input';
+import { updateSelection } from '../search/input';
 
 // A simple linear adjacency for tests: ids are adjacent iff they differ by 1.
 const adj = (a: number, b: number): boolean => Math.abs(a - b) === 1;

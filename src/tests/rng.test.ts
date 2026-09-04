@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { makeRng, randInt, pick, weightedPick } from '../rng';
+import { makeRng, randInt, pick, weightedPick } from '../core/rng';
 
 describe('rng', () => {
   it('is deterministic for a given seed', () => {
