@@ -70,18 +70,34 @@ const browser = await chromium.launch(
 );
 const tab = await browser.newPage();
 
+/**
+ * The font the glyph was actually PAINTED with.
+ *
+ * `getComputedStyle().fontFamily` only echoes the authored stack, so it reads
+ * the same on every machine and would never reveal that `system-ui` resolved to,
+ * say, DejaVu Sans instead of SF Pro. CDP reports the real resolved faces, which
+ * is the whole point of logging this — the PNGs bake in whatever wins here.
+ */
+async function paintedFont() {
+  const cdp = await tab.context().newCDPSession(tab);
+  await cdp.send('DOM.enable');
+  await cdp.send('CSS.enable');
+  const { root } = await cdp.send('DOM.getDocument');
+  const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector: '.glyph' });
+  const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId });
+  await cdp.detach();
+  return fonts.map((f) => `${f.familyName} (${f.glyphCount} glyphs)`).join(', ') || 'unknown';
+}
+
 let reportedFont = null;
 const render = async (w, h, markFrac, file) => {
   await tab.setViewportSize({ width: w, height: h });
   await tab.setContent(page(w, h, markFrac), { waitUntil: 'load' });
   await tab.evaluate(() => document.fonts.ready);
-  reportedFont ??= await tab.evaluate(() => {
-    const el = document.querySelector('.glyph');
-    const cs = getComputedStyle(el);
-    // Which family actually won, and the weight the face resolved to — a stack
-    // without a 600 face silently snaps to 700.
-    return `${cs.fontFamily} @ ${cs.fontWeight}`;
-  });
+  // Weight too: a stack whose faces stop at 400/700 snaps 600 up to 700 silently.
+  reportedFont ??= `${await paintedFont()} @ ${await tab.evaluate(
+    () => getComputedStyle(document.querySelector('.glyph')).fontWeight,
+  )}`;
   await tab.screenshot({ path: join(ROOT, file), type: 'png' });
 };
 
