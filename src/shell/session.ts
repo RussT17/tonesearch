@@ -74,6 +74,13 @@ export interface GameDef<R extends Round> {
   createBoard(shell: Shell, api: SessionApi): Board<R>;
 }
 
+/**
+ * The gap between the last note landing and the chord sounding. Exported so a
+ * board can time a flourish to it — ToneScribe stacks its noteheads exactly
+ * when the chord is struck.
+ */
+export const SOLVE_CHORD_DELAY_MS = 690;
+
 type Phase = 'playing' | 'busy';
 
 const isTier = (t: string): t is Tier =>
@@ -201,18 +208,24 @@ export function startSession<R extends Round>(root: HTMLElement, def: GameDef<R>
     // Play the player's OWN notes (their root, which may differ from the
     // generator's) so the chord matches the arpeggio they just heard.
     // Match the give-up gap between the final note and the chord: reveal waits
-    // one arpeggio step (520ms) + 170ms after the last note ≈ 690ms.
+    // one arpeggio step (520ms) + 170ms after the last note ≈ SOLVE_CHORD_DELAY_MS.
     const midis = def.midisFor?.(round, notes);
-    if (round.pattern.kind === 'scale') {
+    // A one-note round has nothing left to say: the player heard that exact
+    // pitch when they placed it, and sounding it again reads as an echo.
+    const alreadyHeard = round.solutionNotes.length === 1;
+    if (alreadyHeard) {
+      // nothing to play
+    } else if (round.pattern.kind === 'scale') {
       // a quick run up instead of a chord
-      if (midis) audio.playScaleRunMidi(midis, 0.69);
-      else audio.playScaleRun(notes, 0.69);
+      const w = SOLVE_CHORD_DELAY_MS / 1000;
+      if (midis) audio.playScaleRunMidi(midis, w);
+      else audio.playScaleRun(notes, w);
     } else if (midis) {
-      audio.playChordMidi(midis, 0.69);
-      rootlessBassMidi(midis, 0.69);
+      audio.playChordMidi(midis, SOLVE_CHORD_DELAY_MS / 1000);
+      rootlessBassMidi(midis, SOLVE_CHORD_DELAY_MS / 1000);
     } else {
-      audio.playChord(notes, 0.69);
-      rootlessBass(notes, 0.69);
+      audio.playChord(notes, SOLVE_CHORD_DELAY_MS / 1000);
+      rootlessBass(notes, SOLVE_CHORD_DELAY_MS / 1000);
     }
     solved += 1;
     shell.counterEl.textContent = `Solved: ${solved}`;

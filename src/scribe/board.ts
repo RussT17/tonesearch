@@ -16,11 +16,24 @@ import { midiOf, noteAt, type Accidental, type Step } from '../core/staff';
 import * as audio from '../shell/audio';
 import type { Shell } from '../shell/chrome';
 import type { Board, SessionApi } from '../shell/session';
-import { accidentalText, paintNote, renderStaff, type StaffView } from './staffview';
+import { paintNote, renderStaff, type StaffView } from './staffview';
+import { GLYPH_SPACE, accidentalMetrics, accidentalPath } from './glyphs';
+import { SOLVE_CHORD_DELAY_MS } from '../shell/session';
 import type { ScribeRound } from './round';
 
 /** Accidentals always offered. Doubles are added only when a round needs one. */
 const BASE_ACCIDENTALS: Exclude<Accidental, null>[] = [-1, 0, 1];
+
+const ACC_LABEL: Record<Exclude<Accidental, null>, string> = {
+  [-2]: 'Write a double flat',
+  [-1]: 'Write a flat',
+  [0]: 'Write a natural',
+  [1]: 'Write a sharp',
+  [2]: 'Write a double sharp',
+};
+
+/** How long a wrong note takes to fade away. Matches the CSS animation. */
+const WRONG_FADE_MS = 420;
 
 export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRound> {
   const wrap = document.createElement('div');
@@ -40,6 +53,7 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
   let written: { step: Step; acc: Accidental }[] = [];
   /** The accidental button currently held down, or null for "use the key". */
   let armed: Accidental = null;
+  let squashTimer: ReturnType<typeof setTimeout> | undefined;
 
   const buildAccidentalRow = (): void => {
     accRow.innerHTML = '';
@@ -54,8 +68,14 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
     for (const a of accSet) {
       const b = document.createElement('button');
       b.className = 'acc-btn';
-      b.textContent = accidentalText(a);
-      b.setAttribute('aria-label', `Write ${accidentalText(a)}`);
+      // The same glyph the staff writes, from Bravura — a UI font's ♯ beside a
+      // Bravura clef is the wrong shape, and its baseline centres nothing.
+      const m = accidentalMetrics(a);
+      const pad = GLYPH_SPACE * 0.5;
+      b.innerHTML =
+        `<svg viewBox="${m.x1 - pad} ${m.y1 - pad} ${m.x2 - m.x1 + pad * 2} ${m.y2 - m.y1 + pad * 2}" ` +
+        `aria-hidden="true"><path d="${accidentalPath(a)}"/></svg>`;
+      b.setAttribute('aria-label', ACC_LABEL[a]);
       b.onclick = () => {
         armed = armed === a ? null : a; // tapping the armed one disarms it
         paintArmed();
@@ -77,7 +97,7 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
       const w = written[i];
       if (!w) {
         while (g.firstChild) g.removeChild(g.firstChild);
-        g.removeAttribute('transform');
+        g.setAttribute('transform', `translate(${view.geom.parkX} 0)`);
         return;
       }
       paintNote(g, view.geom, w.step, w.acc);
@@ -85,11 +105,13 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
     });
   };
 
+  /** Mark the note just written as wrong and let it fade, rather than blinking
+   * out of existence — a correction on paper, not a deletion. */
   const flashWrong = (i: number): void => {
     const g = view.slots[i];
     if (!g) return;
     g.classList.add('wrong');
-    setTimeout(() => g.classList.remove('wrong'), 420);
+    setTimeout(() => g.classList.remove('wrong'), WRONG_FADE_MS);
   };
 
   const onTap = (ev: PointerEvent): void => {
@@ -132,7 +154,7 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
     if (!rightLine || !api.propose(note)) {
       flashWrong(i);
       written = previous;
-      setTimeout(repaint, 420);
+      setTimeout(repaint, WRONG_FADE_MS);
       return;
     }
     armed = null; // an accidental applies only to the note just written
@@ -147,6 +169,7 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
 
   return {
     setRound(next) {
+      clearTimeout(squashTimer); // a pending squash must not land on the next round
       round = next;
       written = [];
       armed = null;
@@ -175,10 +198,16 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
       }
       repaint();
       // On a completed chord, slide the noteheads together into a stack — how
-      // the same notes would actually be engraved. Scales stay written out.
-      if (notes.length === round.solutionSteps.length && round.pattern.kind !== 'scale') {
+      // the same notes would actually be engraved. Held until the chord sounds,
+      // so the last note lands in its own place first and the stack coincides
+      // with hearing it. Scales stay written out and run instead.
+      const complete = notes.length === round.solutionSteps.length;
+      if (complete && round.pattern.kind !== 'scale' && round.pattern.kind !== 'note') {
         const x0 = view.geom.slotX(0);
-        view.slots.forEach((g) => g.setAttribute('transform', `translate(${x0} 0)`));
+        clearTimeout(squashTimer);
+        squashTimer = setTimeout(() => {
+          view.slots.forEach((g) => g.setAttribute('transform', `translate(${x0} 0)`));
+        }, SOLVE_CHORD_DELAY_MS);
       }
     },
     setBusy(b) {

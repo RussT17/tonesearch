@@ -44,12 +44,11 @@
   box-shadow: none;
   animation: none;
 }
-.path-overlay polyline {
-  stroke: var(--neon);
-  filter: none;
-}
-.solved .path-overlay polyline {
-  filter: none;
+/* The target row's connecting line traced a path through ToneSearch's grid.
+   Nothing is being traced here — the notes go on a staff — so it only implies a
+   route that does not exist. */
+.tokens .path-overlay {
+  display: none;
 }
 
 /* --- the wordmark: ToneSearch's face for "Tone", a written hand for "Scribe" --- */
@@ -98,6 +97,18 @@
   max-width: 22rem;
   margin-left: auto;
   margin-right: auto;
+}
+
+/* base.css frames Give Up in a near-white that is invisible on paper. */
+.giveup {
+  border-color: var(--neon-mute);
+  color: var(--text-dim);
+}
+.giveup:active,
+.giveup.lit {
+  background: var(--neon);
+  border-color: var(--neon);
+  color: var(--bg-2);
 }
 
 /* --- the staff --- */
@@ -158,12 +169,20 @@
 .staff .note {
   transition: transform 420ms cubic-bezier(0.34, 0.9, 0.3, 1);
 }
+/* A wrong note is a correction, not a deletion: it turns red and fades, so the
+   eye follows what happened instead of finding the note simply gone. */
+.staff .note.wrong :is(path, line) {
+  fill: var(--wrong);
+  stroke: var(--wrong);
+}
 .staff .note.wrong {
-  animation: inkWrong 0.42s ease;
+  animation: inkWrong 0.42s ease forwards;
+  transition: none; /* fade in place; do not also slide back to the park */
 }
 @keyframes inkWrong {
-  0%, 100% { opacity: 1; }
-  25% { opacity: 0.25; }
+  0% { opacity: 1; }
+  35% { opacity: 1; }
+  100% { opacity: 0; }
 }
 .staff .acc {
   font-size: 13px;
@@ -187,21 +206,33 @@
   justify-content: center;
 }
 .acc-btn {
-  font: inherit;
-  font-size: 1.25rem;
-  line-height: 1;
-  min-width: 2.6rem;
-  min-height: 2.6rem;
-  color: var(--text);
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
   background: transparent;
   border: 1px solid var(--neon-mute);
   border-radius: 8px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+/* The glyph's own ink box is the viewBox, so the SVG centres the SHAPE — a text
+   accidental centres its line box instead, which is why these sat high and
+   small. Flats and sharps differ in height; sizing by height keeps them even. */
+.acc-btn svg {
+  height: 1.5rem;
+  width: 1.5rem;
+  overflow: visible;
+}
+.acc-btn svg path {
+  fill: var(--text);
 }
 .acc-btn.armed {
   background: var(--neon);
   border-color: var(--neon);
-  color: var(--bg-2);
+}
+.acc-btn.armed svg path {
+  fill: var(--bg-2);
 }

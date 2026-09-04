@@ -1,9 +1,9 @@
 // staffview.ts — draws the staff. Presentation only: it knows steps and slots,
 // never whether an answer is right.
 //
-// Everything is laid out in the glyph coordinate system the clefs are authored
-// in (10 units per staff space, y down, the five lines at y = 20…60), and the
-// SVG viewBox scales that to whatever width the stage gives us.
+// Everything is laid out in the glyph coordinate system the Bravura paths are
+// authored in (10 units per staff space, y down, the five lines at y = 20…60),
+// and the SVG viewBox scales that to whatever width the stage gives us.
 
 import {
   bottomLineStep,
@@ -15,27 +15,37 @@ import {
   type StaffRange,
   type Step,
 } from '../core/staff';
-import { GLYPH_SPACE, clefPath, clefWidth, noteheadPath } from './glyphs';
+import {
+  GLYPH_SPACE,
+  accidentalMetrics,
+  accidentalPath,
+  clefPath,
+  clefWidth,
+  noteheadPath,
+} from './glyphs';
 import { SVG_NS } from '../shell/svg';
 
 const STEP_Y = GLYPH_SPACE / 2; // one step is half a space
 const SLOT_W = 30; // horizontal room per written note
 const PAD_L = 8;
-const KEY_GAP = 10;
-const SIG_W = 9; // per key-signature accidental
+const KEY_GAP = 12;
+const SIG_GAP = 1.2; // between adjacent key-signature accidentals
 
-const ACC_TEXT: Record<Exclude<Accidental, null>, string> = {
-  [-2]: '𝄫',
-  [-1]: '♭',
-  [0]: '♮',
-  [1]: '♯',
-  [2]: '𝄪',
-};
-/** ♭♭ and ♯♯ as doubled singles: the dedicated Unicode doubles (𝄫 𝄪) are in the
- * same musical-symbols block as the clefs, so they are missing from the same
- * font stacks. The doubled forms always render. */
-export const accidentalText = (a: Exclude<Accidental, null>): string =>
-  a === -2 ? '♭♭' : a === 2 ? '♯♯' : ACC_TEXT[a];
+/**
+ * The staff is always drawn for this many notes, whatever the round holds. A
+ * staff that resizes per sequence makes the whole page jump between rounds, and
+ * the eye loses the line it was reading.
+ */
+const SLOTS = 5;
+
+/** Widest clef and key signature, so the staff's outer size never changes. */
+const CLEF_W_MAX = Math.max(clefWidth('treble'), clefWidth('bass'));
+const SIG_W_MAX = 7 * (accidentalMetrics(1).width + SIG_GAP);
+const STAFF_W = PAD_L + CLEF_W_MAX + SIG_W_MAX + KEY_GAP + SLOTS * SLOT_W + PAD_L;
+
+/** Vertical extent: three ledger lines either way, plus room for the treble
+ * clef's tail. Fixed, so the staff never changes height either. */
+const LEDGER_SHOWN = 3;
 
 const el = (tag: string, attrs: Record<string, string | number> = {}): SVGElement => {
   const e = document.createElementNS(SVG_NS, tag);
@@ -49,6 +59,9 @@ export interface StaffGeometry {
   y: (step: Step) => number;
   /** Centre x of the slot for written note `i`. */
   slotX: (i: number) => number;
+  /** Where an unwritten note waits: off the right edge, so notes arrive from
+   * the direction writing travels. */
+  parkX: number;
   /** Nearest step to a y in glyph units, clamped to what the clef can show. */
   stepAtY: (y: number) => Step;
   width: number;
@@ -75,37 +88,36 @@ export function renderStaff(
   sig: number,
   range: StaffRange,
   slotCount: number,
-  ledger = 3,
 ): StaffView {
   host.innerHTML = '';
 
   const bottom = bottomLineStep(clef);
   const y = (step: Step): number => 60 - (step - bottom) * STEP_Y;
 
-  const playable = playableRange(clef, ledger);
-  const sigW = Math.min(Math.abs(sig), 7) * SIG_W;
-  const slotsX0 = PAD_L + clefWidth(clef) + (sigW ? sigW + KEY_GAP : KEY_GAP);
+  const playable = playableRange(clef, LEDGER_SHOWN);
+  const marks = keySignatureMarks(sig, clef);
+  const sigW = marks.reduce((w, m) => w + accidentalMetrics(m.acc).width + SIG_GAP, 0);
+  const slotsX0 = PAD_L + clefWidth(clef) + KEY_GAP + sigW;
   const slotX = (i: number): number => slotsX0 + i * SLOT_W + SLOT_W / 2;
 
-  const width = slotsX0 + slotCount * SLOT_W + PAD_L;
-  // Vertical extent: whatever the clef can show, plus room for the treble
-  // clef's tail, plus a margin so ledger lines never touch the edge.
-  const minY = Math.min(y(playable.hi), 4) - 10;
+  const minY = y(playable.hi) - 12;
   const maxY = Math.max(y(playable.lo), 78) + 10;
   const height = maxY - minY;
 
   const svg = el('svg', {
     class: 'staff',
-    viewBox: `0 ${minY} ${width} ${height}`,
+    viewBox: `0 ${minY} ${STAFF_W} ${height}`,
     preserveAspectRatio: 'xMidYMid meet',
   }) as SVGSVGElement;
 
   // The band you must write inside — drawn first, under everything.
   const bandTop = y(range.hi) - STEP_Y;
   const bandBottom = y(range.lo) + STEP_Y;
+  // Spans the whole writing area, so the fifth slot is inside it too.
+  const bandX = slotsX0 - SLOT_W / 2;
+  const bandW = STAFF_W - PAD_L - bandX;
   svg.append(
-    el('rect', { class: 'band', x: slotsX0 - 4, y: bandTop, width: width - slotsX0 - PAD_L + 8, height: bandBottom - bandTop, rx: 3 }),
-    el('rect', { class: 'band-edge', x: slotsX0 - 4, y: bandTop, width: width - slotsX0 - PAD_L + 8, height: bandBottom - bandTop, rx: 3 }),
+    el('rect', { class: 'band', x: bandX, y: bandTop, width: bandW, height: bandBottom - bandTop, rx: 3 }),
   );
 
   // Ledger lines the band reaches, drawn BEFORE anything is written. Engraving
@@ -121,28 +133,36 @@ export function renderStaff(
   }
 
   for (let line = 0; line < 5; line++) {
-    svg.append(el('line', { class: 'rule', x1: PAD_L, y1: 60 - line * GLYPH_SPACE, x2: width - PAD_L, y2: 60 - line * GLYPH_SPACE }));
+    const ly = 60 - line * GLYPH_SPACE;
+    svg.append(el('line', { class: 'rule', x1: PAD_L, y1: ly, x2: STAFF_W - PAD_L, y2: ly }));
   }
 
   svg.append(el('path', { class: 'ink', d: clefPath(clef), transform: `translate(${PAD_L + 2} 0)` }));
 
-  keySignatureMarks(sig, clef).forEach((m, i) => {
-    const t = el('text', { class: 'keysig', x: PAD_L + clefWidth(clef) + i * SIG_W + SIG_W / 2, y: y(m.step) });
-    t.textContent = m.acc === 1 ? '♯' : '♭';
-    svg.append(t);
-  });
+  // Key signature: each accidental's own origin sits on its note's step, so
+  // placing one is a translate — no eyeballed offsets, and they land centred on
+  // the line or space they belong to.
+  let sx = PAD_L + clefWidth(clef) + KEY_GAP * 0.5;
+  for (const m of marks) {
+    svg.append(el('path', {
+      class: 'ink', d: accidentalPath(m.acc), transform: `translate(${sx} ${y(m.step)})`,
+    }));
+    sx += accidentalMetrics(m.acc).width + SIG_GAP;
+  }
 
+  const parkX = STAFF_W + SLOT_W; // just off the right edge
   const slots: SVGGElement[] = [];
   for (let i = 0; i < slotCount; i++) {
-    const g = el('g', { class: 'note' }) as SVGGElement;
+    const g = el('g', { class: 'note', transform: `translate(${parkX} 0)` }) as SVGGElement;
     svg.append(g);
     slots.push(g);
   }
 
   // One transparent hit area over the writing region, so a tap anywhere picks
   // the nearest line or space rather than demanding pixel accuracy.
-  const hit = el('rect', { class: 'slot-hit', x: slotsX0 - SLOT_W / 2, y: minY, width: width - slotsX0 + SLOT_W, height });
-  svg.append(hit);
+  svg.append(el('rect', {
+    class: 'slot-hit', x: slotsX0 - SLOT_W / 2, y: minY, width: STAFF_W - slotsX0, height,
+  }));
 
   host.append(svg);
 
@@ -153,11 +173,16 @@ export function renderStaff(
 
   const toGlyph = (ev: PointerEvent): { x: number; y: number } => {
     const r = svg.getBoundingClientRect();
-    const scale = width / r.width; // uniform: preserveAspectRatio keeps it square
+    const scale = STAFF_W / r.width; // uniform: preserveAspectRatio keeps it square
     return { x: (ev.clientX - r.left) * scale, y: (ev.clientY - r.top) * scale + minY };
   };
 
-  return { svg, geom: { clef, y, slotX, stepAtY, width, height, minY }, slots, toGlyph };
+  return {
+    svg,
+    geom: { clef, y, slotX, parkX, stepAtY, width: STAFF_W, height, minY },
+    slots,
+    toGlyph,
+  };
 }
 
 /** Ledger lines needed to reach `step` from the staff, as line steps. */
@@ -186,16 +211,10 @@ export function paintNote(
   }
   g.append(el('path', { class: 'ink', d: noteheadPath(cx, cy, GLYPH_SPACE), transform: `rotate(-18 ${cx} ${cy})` }));
   if (acc !== null) {
-    const t = el('text', { class: 'acc', x: cx - 13, y: cy });
-    t.textContent = accidentalText(acc);
-    g.append(t);
+    // Sits left of the notehead, clear of it by a hair — as engraved.
+    const m = accidentalMetrics(acc);
+    g.append(el('path', {
+      class: 'ink', d: accidentalPath(acc), transform: `translate(${cx - 8 - m.width} ${cy})`,
+    }));
   }
-}
-
-/** Show where the next note will go: a faint caret under the active slot. */
-export function paintCaret(g: SVGGElement, geom: StaffGeometry, active: boolean): void {
-  while (g.firstChild) g.removeChild(g.firstChild);
-  if (!active) return;
-  const yb = geom.y(geom.stepAtY(90)) + 6;
-  g.append(el('path', { class: 'caret', d: `M -7 ${yb} L 7 ${yb}` }));
 }
