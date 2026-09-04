@@ -48,8 +48,9 @@ const css = await readFile(join(ROOT, 'src/style.css'), 'utf8');
  * real body background. `markFrac` is the diamond's point-to-point width as a
  * fraction of the canvas's shorter side.
  */
-const page = (w, h, markFrac) => {
+const page = (w, h, markFrac, nudgeX = 0) => {
   const scale = (Math.min(w, h) * markFrac) / REF_DIAG;
+  const fontPx = REF_SIDE * GLYPH_RATIO;
   return `<!doctype html><html><head><meta charset="utf-8"><style>
 ${css}
 /* --- icon harness (not part of the app) --- */
@@ -59,11 +60,83 @@ body { display: grid; place-items: center; }
    stay in the same ratio to the tile as they are in the running game. */
 .mark { transform: scale(${scale}); transform-origin: center; }
 .mark .cell { position: relative; width: ${REF_SIDE}px; height: ${REF_SIDE}px; }
-.mark .glyph { font-size: ${REF_SIDE * GLYPH_RATIO}px; }
+/* The translate sits before the counter-rotation, and the cell's own +45°
+   cancels the glyph's -45°, so this reads as a straight sideways shift on
+   screen rather than a diagonal one. */
+.mark .glyph {
+  font-size: ${fontPx}px;
+  transform: rotate(-45deg) translateX(${nudgeX * fontPx}px);
+}
 </style></head><body>
 <div class="mark"><div class="cell selected"><span class="glyph">${MARK_TEXT}</span></div></div>
 </body></html>`;
 };
+
+/**
+ * How far to shift the glyph sideways so its INK is centred, as a fraction of
+ * font size.
+ *
+ * Centring places the text's ADVANCE box, which carries each glyph's side
+ * bearings — the built-in space beside the letterforms. Those are asymmetric for
+ * a given pair, so "TS" lands with unequal space either side of it: in SF Pro
+ * the letters sit ~0.4% of the icon to the right, in DejaVu ~1% to the left.
+ * Measure the real ink box and cancel the difference.
+ *
+ * The vertical twin of this is handled by `text-box` in the app's own
+ * stylesheet, which benefits every note label. This one stays here on purpose:
+ * the correction is specific to the exact string being set, and the game's
+ * labels all differ, so advance-box centring remains right for the app.
+ */
+async function measureInkNudgeX(tab) {
+  const PROBE = 512;
+  const FRAC = 0.64;
+  const scale = (PROBE * FRAC) / REF_DIAG;
+  const fontPx = REF_SIDE * GLYPH_RATIO * scale; // font size in probe pixels
+
+  await tab.setViewportSize({ width: PROBE, height: PROBE });
+  let nudge = 0;
+  for (let pass = 0; pass < 4; pass++) {
+    await tab.setContent(page(PROBE, PROBE, FRAC, nudge), { waitUntil: 'load' });
+    await tab.evaluate(() => document.fonts.ready);
+    const shot = await tab.screenshot({ type: 'png' });
+    // Read the painted result back: white-ish pixels are the letters, purple ones
+    // (green channel clearly below red/blue) are the diamond. Canvas TextMetrics
+    // is not reliable enough here — Chrome reports actualBoundingBoxLeft as 0 for
+    // fonts where it plainly isn't, which corrects by only half the real error.
+    const off = await tab.evaluate(async (src) => {
+      const img = new Image();
+      img.src = src;
+      await img.decode();
+      const c = document.createElement('canvas');
+      c.width = img.width;
+      c.height = img.height;
+      const ctx = c.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0);
+      const d = ctx.getImageData(0, 0, c.width, c.height).data;
+      const centreX = (hit) => {
+        let lo = Infinity;
+        let hi = -Infinity;
+        for (let y = 0; y < c.height; y++) {
+          for (let x = 0; x < c.width; x++) {
+            const i = (y * c.width + x) * 4;
+            if (hit(d[i], d[i + 1], d[i + 2])) {
+              if (x < lo) lo = x;
+              if (x > hi) hi = x;
+            }
+          }
+        }
+        return (lo + hi) / 2;
+      };
+      const text = centreX((r, g, b) => r > 185 && g > 185 && b > 185);
+      const diamond = centreX((r, g, b) => r > 150 && b > 200 && g < 150);
+      return text - diamond; // + means the letters sit right of the tile
+    }, `data:image/png;base64,${shot.toString('base64')}`);
+
+    if (Math.abs(off) <= 0.5) break; // sub-pixel: as centred as the raster allows
+    nudge -= off / fontPx;
+  }
+  return nudge;
+}
 
 const browser = await chromium.launch(
   process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {},
@@ -89,10 +162,12 @@ async function paintedFont() {
   return fonts.map((f) => `${f.familyName} (${f.glyphCount} glyphs)`).join(', ') || 'unknown';
 }
 
+const nudgeX = await measureInkNudgeX(tab);
+
 let reportedFont = null;
 const render = async (w, h, markFrac, file) => {
   await tab.setViewportSize({ width: w, height: h });
-  await tab.setContent(page(w, h, markFrac), { waitUntil: 'load' });
+  await tab.setContent(page(w, h, markFrac, nudgeX), { waitUntil: 'load' });
   await tab.evaluate(() => document.fonts.ready);
   // Weight too: a stack whose faces stop at 400/700 snaps 600 up to 700 silently.
   reportedFont ??= `${await paintedFont()} @ ${await tab.evaluate(
@@ -144,6 +219,7 @@ await writeFile(join(ROOT, 'scripts/splash-links.html'), links.join('\n') + '\n'
 await browser.close();
 
 console.log(`glyph font resolved to: ${reportedFont}`);
+console.log(`  ink centred by ${(nudgeX * 100).toFixed(2)}% of font size (side-bearing correction)`);
 console.log(`  (baked into the PNGs — run on macOS for the SF Pro the app shows on iOS)`);
 console.log(`\ndone: 4 icons + 2 maskable + 2 favicons + ${iphones.length} iOS splashes`);
 console.log(`splash <link> block written to scripts/splash-links.html`);
