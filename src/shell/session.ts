@@ -11,8 +11,14 @@ import type { Fifths } from '../core/theory';
 import type { Pattern, Tier } from '../core/pattern';
 import { isPrefix } from '../core/generate';
 import * as audio from './audio';
-import { mountShell, showStartGate, sizeDifficulty, wireChrome, type Shell } from './chrome';
-import { drawTokenLine, renderTokens, targetPitch, type TokenView } from './tokens';
+import {
+  mountShell, showStartGate, sizeDifficulty, wireChrome,
+  type PlayShape, type Shell,
+} from './chrome';
+import {
+  renderTokens, setTokenProgress, targetPitch,
+  type TokenShape, type TokenView,
+} from './tokens';
 
 /** The minimum a round must expose for the shared loop to run it. */
 export interface Round {
@@ -75,6 +81,13 @@ export interface GameDef<R extends Round> {
   /** Start-gate wordmark (may carry markup) and one-line explainer. */
   title: string;
   subtitle: string;
+  /** The Play button's outline. Defaults to ToneSearch's widened diamond. */
+  playShape?: PlayShape;
+  /** How the target row is drawn. Defaults to diamonds. */
+  tokenShape?: TokenShape;
+  /** What fills the lower half of each target card as the sequence is
+   * completed — ToneScribe names the note each interval turns out to be. */
+  tokenSubLabels?: (round: R) => string[];
   /** Build a round for `tier`. */
   newRound(tier: Tier): R;
   /** The line under the target sequence. */
@@ -139,6 +152,11 @@ export function startSession<R extends Round>(root: HTMLElement, def: GameDef<R>
     audio.playRootBassNear(notes[0]! - iv[0]!, midis[0]!, when);
   };
 
+  const tokenOpts = (): { shape?: TokenShape; subLabels?: string[] } => ({
+    shape: def.tokenShape,
+    subLabels: def.tokenSubLabels?.(round),
+  });
+
   /** Render the per-round instruction, emphasising the words it hangs on. */
   const setLabel = (spans: readonly LabelSpan[]): void => {
     shell.labelEl.replaceChildren(
@@ -154,8 +172,7 @@ export function startSession<R extends Round>(root: HTMLElement, def: GameDef<R>
   /** Push current progress to both views: the board and the target row. */
   const paint = (): void => {
     board.paint(notes);
-    tokenView.tokenEls.forEach((el, i) => el.classList.toggle('selected', i < notes.length));
-    drawTokenLine(tokenView, notes.length);
+    setTokenProgress(tokenView, notes.length);
   };
 
   const api: SessionApi = {
@@ -198,7 +215,7 @@ export function startSession<R extends Round>(root: HTMLElement, def: GameDef<R>
     // to the pre-band stage height can overflow into the target row.
     const bandW = shell.tokensEl.parentElement?.clientWidth ?? window.innerWidth;
     const pitch = targetPitch(bandW - 24);
-    tokenView = renderTokens(shell.tokensEl, round.pattern, pitch);
+    tokenView = renderTokens(shell.tokensEl, round.pattern, pitch, tokenOpts());
     board.layout(pitch);
     paint();
   };
@@ -211,7 +228,7 @@ export function startSession<R extends Round>(root: HTMLElement, def: GameDef<R>
     shell.nameEl.textContent = def.caption(round);
     const bandW = shell.tokensEl.parentElement?.clientWidth ?? window.innerWidth;
     const pitch = targetPitch(bandW - 24);
-    tokenView = renderTokens(shell.tokensEl, round.pattern, pitch);
+    tokenView = renderTokens(shell.tokensEl, round.pattern, pitch, tokenOpts());
     board.setRound(round, pitch);
     paint();
     if (import.meta.env.DEV) {
@@ -350,5 +367,5 @@ export function startSession<R extends Round>(root: HTMLElement, def: GameDef<R>
 
   board = def.createBoard(shell, api);
   newRound();
-  showStartGate(root, def.title, def.subtitle);
+  showStartGate(root, def.title, def.subtitle, def.playShape);
 }

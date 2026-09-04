@@ -174,6 +174,9 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
 
   /** Collapse the written row into one engraved chord, centred in the band. */
   const squash = (): void => {
+    // The empty-slot ledger guides go with it: they mark where notes could be
+    // written, and once the chord is stacked nothing is being written any more.
+    view.svg.classList.add('chorded');
     const lay = chordLayout(written, view.geom.y);
     const area = view.geom.writeArea;
     // Centre the chord's ink, not its noteheads: a stack with two accidental

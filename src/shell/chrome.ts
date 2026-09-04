@@ -166,18 +166,35 @@ export function wireChrome(shell: Shell): void {
  * "Tap to start" gate: the first gesture unlocks + warms the audio pipeline
  * while no sound is expected, so the first real note tap is lag-free.
  */
-export function showStartGate(root: HTMLElement, title: string, subtitle: string): void {
+/** The Play button's outline. Per-game: the shape is the first thing seen, and
+ * ToneSearch's widened diamond is ToneSearch's own signature. */
+export interface PlayShape {
+  viewBox: string;
+  d: string;
+}
+
+/** ToneSearch's: a widened diamond — left/right points, flat top/bottom edges. */
+export const DIAMOND_PLAY: PlayShape = {
+  viewBox: '0 0 144 52',
+  d: 'M 5.38 29.69 Q 2 26 5.38 22.31 L 20.62 5.69 Q 24 2 29 2 L 115 2 Q 120 2 123.38 5.69 L 138.62 22.31 Q 142 26 138.62 29.69 L 123.38 46.31 Q 120 50 115 50 L 29 50 Q 24 50 20.62 46.31 Z',
+};
+
+export function showStartGate(
+  root: HTMLElement,
+  title: string,
+  subtitle: string,
+  shape: PlayShape = DIAMOND_PLAY,
+): void {
   const overlay = el('div', 'start-overlay');
   const inner = el('div', 'start-inner');
   const titleEl = el('div', 'start-title');
   titleEl.innerHTML = title; // may carry per-app markup (e.g. a split wordmark)
   const sub = el('div', 'start-sub', subtitle);
-  // Play button as a widened diamond (hexagon: left/right points + flat
-  // top/bottom edges), styled like a lit target diamond with the word inside.
+  // Play button, drawn in the game's own shape with the word inside.
   const btn = el<HTMLButtonElement>('button', 'start-btn');
   btn.innerHTML =
-    '<svg class="hex" viewBox="0 0 144 52" aria-hidden="true">' +
-    '<path d="M 5.38 29.69 Q 2 26 5.38 22.31 L 20.62 5.69 Q 24 2 29 2 L 115 2 Q 120 2 123.38 5.69 L 138.62 22.31 Q 142 26 138.62 29.69 L 123.38 46.31 Q 120 50 115 50 L 29 50 Q 24 50 20.62 46.31 Z" vector-effect="non-scaling-stroke"/>' +
+    `<svg class="shape" viewBox="${shape.viewBox}" aria-hidden="true">` +
+    `<path d="${shape.d}" vector-effect="non-scaling-stroke"/>` +
     '</svg><span>Play</span>';
   inner.append(titleEl, sub, btn);
   overlay.append(inner);

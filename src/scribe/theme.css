@@ -65,12 +65,12 @@
   font-size: 1.15em; /* written faces run small next to a UI sans */
   padding-left: 0.04em;
 }
-.start-btn .hex path {
+.start-btn .shape path {
   fill: transparent;
   stroke: var(--neon);
 }
-.start-btn:active .hex path,
-.start-btn.lit .hex path {
+.start-btn:active .shape path,
+.start-btn.lit .shape path {
   fill: var(--neon);
   stroke: var(--neon);
 }
@@ -78,11 +78,11 @@
 .start-btn.lit span {
   color: var(--bg-2);
 }
-.start-btn .hex {
+.start-btn .shape {
   filter: none;
 }
-.start-btn:active .hex,
-.start-btn.lit .hex {
+.start-btn:active .shape,
+.start-btn.lit .shape {
   filter: none;
 }
 
@@ -123,6 +123,61 @@
   display: none;
 }
 
+/* --- target row: split cards --- */
+/* Interval on top, and the note it turns out to name underneath, written in as
+   the sequence is completed. The top half inverts when its position is done —
+   the same "lit" reading as ToneSearch's diamonds — while the lower half stays
+   on paper, because a name being written is not the same event as a position
+   being satisfied. */
+.token-card {
+  position: absolute;
+  top: 0;
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  border: 1.5px solid var(--neon-mute);
+  border-radius: 10px;
+  overflow: hidden; /* so the lit top half is clipped to the rounded corner */
+  background: var(--bg-2);
+  transition: border-color 0.14s ease;
+}
+.token-card.selected {
+  border-color: var(--neon);
+}
+.token-card .tk-top,
+.token-card .tk-bottom {
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  /* Centre the letters, not the line box — same reasoning as base.css's
+     .cell .glyph: these labels have no descenders. */
+  text-box: trim-both cap alphabetic;
+}
+.token-card .tk-top {
+  color: var(--text);
+  border-bottom: 1px solid var(--neon-mute);
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.token-card.selected .tk-top {
+  background: var(--neon);
+  border-bottom-color: var(--neon);
+  color: var(--bg-2);
+}
+/* Empty until its note is written; it appears rather than sliding, since the
+   note it names has just landed on the staff. */
+.token-card .tk-bottom {
+  color: var(--text);
+  animation: inkName 0.22s ease;
+}
+.token-card .tk-bottom:empty {
+  animation: none;
+}
+@keyframes inkName {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 /* --- the staff --- */
 .staff-wrap {
   width: 100%;
@@ -149,6 +204,13 @@
   stroke: var(--band-edge);
   stroke-width: 1;
   stroke-linecap: round;
+  transition: opacity 320ms ease;
+}
+/* Once the chord stacks, the guides are aiming marks for slots nobody is using
+   any more — and they sit where the notes just left, which reads as leftovers.
+   They go, and the engraved chord is the only thing on the staff. */
+.staff.chorded .ledger-guide {
+  opacity: 0;
 }
 .staff .ledger {
   stroke: var(--rule);

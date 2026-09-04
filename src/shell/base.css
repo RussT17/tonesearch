@@ -343,8 +343,10 @@ body {
   font-size: 0.9rem;
   letter-spacing: 0.02em;
 }
-/* Play button = a widened diamond (hexagon) drawn like a lit target diamond,
-   with the word as a note-style glyph inside. Lights up brighter on press. */
+/* Play button: a shape drawn like a lit target cell with the word as a
+   note-style glyph inside. The outline itself is per-game (ToneSearch's
+   widened diamond, ToneScribe's card), so only its dressing lives here.
+   Lights up brighter on press. */
 .start-btn {
   position: relative;
   display: inline-flex;
@@ -363,7 +365,7 @@ body {
   text-shadow: 0 0 6px var(--neon-dim); /* like a note glyph */
   -webkit-tap-highlight-color: transparent;
 }
-.start-btn .hex {
+.start-btn .shape {
   display: block;
   width: 156px;
   height: 56px;
@@ -371,7 +373,7 @@ body {
   filter: drop-shadow(0 0 8px var(--neon-dim));
   transition: filter 0.12s ease;
 }
-.start-btn .hex path {
+.start-btn .shape path {
   fill: rgba(199, 125, 255, 0.1);
   stroke: var(--neon);
   stroke-width: 1.5;
@@ -387,12 +389,12 @@ body {
 }
 /* pressed state (matches a tapped/selected grid cell); .lit holds it briefly on
    start so the press is felt before the overlay fades. */
-.start-btn:active .hex,
-.start-btn.lit .hex {
+.start-btn:active .shape,
+.start-btn.lit .shape {
   filter: drop-shadow(0 0 16px var(--neon));
 }
-.start-btn:active .hex path,
-.start-btn.lit .hex path {
+.start-btn:active .shape path,
+.start-btn.lit .shape path {
   fill: rgba(199, 125, 255, 0.28);
   stroke: var(--neon-bright);
 }
