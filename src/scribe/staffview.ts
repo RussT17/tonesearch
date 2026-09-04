@@ -26,22 +26,16 @@ import {
 import { SVG_NS } from '../shell/svg';
 
 const STEP_Y = GLYPH_SPACE / 2; // one step is half a space
-const SLOT_W = 30; // horizontal room per written note
 const PAD_L = 8;
-const KEY_GAP = 12;
+const KEY_GAP = 12; // clef → signature, and signature → writing area
 const SIG_GAP = 1.2; // between adjacent key-signature accidentals
+const MIN_WRITE_W = 150; // writing area at the widest key signature
 
-/**
- * The staff is always drawn for this many notes, whatever the round holds. A
- * staff that resizes per sequence makes the whole page jump between rounds, and
- * the eye loses the line it was reading.
- */
-const SLOTS = 5;
-
-/** Widest clef and key signature, so the staff's outer size never changes. */
+/** Widest clef and key signature, so the staff's outer size never changes —
+ * a staff that resized per round made the whole page jump between them. */
 const CLEF_W_MAX = Math.max(clefWidth('treble'), clefWidth('bass'));
-const SIG_W_MAX = 7 * (accidentalMetrics(1).width + SIG_GAP);
-const STAFF_W = PAD_L + CLEF_W_MAX + SIG_W_MAX + KEY_GAP + SLOTS * SLOT_W + PAD_L;
+const SIG_W_MAX = 7 * (accidentalMetrics(-1).width + SIG_GAP);
+const STAFF_W = PAD_L + CLEF_W_MAX + KEY_GAP + SIG_W_MAX + KEY_GAP + MIN_WRITE_W + PAD_L;
 
 /** Vertical extent: three ledger lines either way, plus room for the treble
  * clef's tail. Fixed, so the staff never changes height either. */
@@ -62,6 +56,9 @@ export interface StaffGeometry {
   /** Where an unwritten note waits: off the right edge, so notes arrive from
    * the direction writing travels. */
   parkX: number;
+  /** The region a note may be written in — the grey band. Taps outside it do
+   * nothing at all. */
+  writeArea: { x0: number; x1: number; yTop: number; yBottom: number };
   /** Nearest step to a y in glyph units, clamped to what the clef can show. */
   stepAtY: (y: number) => Step;
   width: number;
@@ -96,9 +93,20 @@ export function renderStaff(
 
   const playable = playableRange(clef, LEDGER_SHOWN);
   const marks = keySignatureMarks(sig, clef);
+  const sigX = PAD_L + clefWidth(clef) + KEY_GAP;
   const sigW = marks.reduce((w, m) => w + accidentalMetrics(m.acc).width + SIG_GAP, 0);
-  const slotsX0 = PAD_L + clefWidth(clef) + KEY_GAP + sigW;
-  const slotX = (i: number): number => slotsX0 + i * SLOT_W + SLOT_W / 2;
+
+  // The writing area is whatever staff is left once the clef and signature have
+  // had their room — so it starts clear of the signature rather than reaching
+  // back over it.
+  const writeX0 = sigX + sigW + KEY_GAP;
+  const writeX1 = STAFF_W - PAD_L;
+
+  // Notes divide that area into equal columns and sit in the middle of theirs.
+  // Fixed pitch left a three-note round bunched at the left with dead staff to
+  // the right; this spreads three wider than five, and centres a single note.
+  const colW = (writeX1 - writeX0) / slotCount;
+  const slotX = (i: number): number => writeX0 + colW * (i + 0.5);
 
   const minY = y(playable.hi) - 12;
   const maxY = Math.max(y(playable.lo), 78) + 10;
@@ -110,15 +118,14 @@ export function renderStaff(
     preserveAspectRatio: 'xMidYMid meet',
   }) as SVGSVGElement;
 
-  // The band you must write inside — drawn first, under everything.
+  // The band you must write inside — drawn first, under everything. It covers
+  // exactly the writing area, so it never runs under the key signature.
   const bandTop = y(range.hi) - STEP_Y;
   const bandBottom = y(range.lo) + STEP_Y;
-  // Spans the whole writing area, so the fifth slot is inside it too.
-  const bandX = slotsX0 - SLOT_W / 2;
-  const bandW = STAFF_W - PAD_L - bandX;
-  svg.append(
-    el('rect', { class: 'band', x: bandX, y: bandTop, width: bandW, height: bandBottom - bandTop, rx: 3 }),
-  );
+  svg.append(el('rect', {
+    class: 'band', x: writeX0, y: bandTop, width: writeX1 - writeX0,
+    height: bandBottom - bandTop, rx: 3,
+  }));
 
   // Ledger lines the band reaches, drawn BEFORE anything is written. Engraving
   // only draws these under a note, but a player needs something to aim at — with
@@ -142,7 +149,7 @@ export function renderStaff(
   // Key signature: each accidental's own origin sits on its note's step, so
   // placing one is a translate — no eyeballed offsets, and they land centred on
   // the line or space they belong to.
-  let sx = PAD_L + clefWidth(clef) + KEY_GAP * 0.5;
+  let sx = sigX;
   for (const m of marks) {
     svg.append(el('path', {
       class: 'ink', d: accidentalPath(m.acc), transform: `translate(${sx} ${y(m.step)})`,
@@ -150,7 +157,7 @@ export function renderStaff(
     sx += accidentalMetrics(m.acc).width + SIG_GAP;
   }
 
-  const parkX = STAFF_W + SLOT_W; // just off the right edge
+  const parkX = STAFF_W + colW; // just off the right edge
   const slots: SVGGElement[] = [];
   for (let i = 0; i < slotCount; i++) {
     const g = el('g', { class: 'note', transform: `translate(${parkX} 0)` }) as SVGGElement;
@@ -158,10 +165,12 @@ export function renderStaff(
     slots.push(g);
   }
 
-  // One transparent hit area over the writing region, so a tap anywhere picks
-  // the nearest line or space rather than demanding pixel accuracy.
+  // The band IS the target. A tap inside it picks the nearest line or space
+  // rather than demanding pixel accuracy; a tap outside is not a wrong note,
+  // it is not a target at all (see the board's bounds check).
   svg.append(el('rect', {
-    class: 'slot-hit', x: slotsX0 - SLOT_W / 2, y: minY, width: STAFF_W - slotsX0, height,
+    class: 'slot-hit', x: writeX0, y: bandTop, width: writeX1 - writeX0,
+    height: bandBottom - bandTop,
   }));
 
   host.append(svg);
@@ -179,7 +188,10 @@ export function renderStaff(
 
   return {
     svg,
-    geom: { clef, y, slotX, parkX, stepAtY, width: STAFF_W, height, minY },
+    geom: {
+      clef, y, slotX, parkX, stepAtY, width: STAFF_W, height, minY,
+      writeArea: { x0: writeX0, x1: writeX1, yTop: bandTop, yBottom: bandBottom },
+    },
     slots,
     toGlyph,
   };

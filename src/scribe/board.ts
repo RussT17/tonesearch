@@ -105,6 +105,13 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
     });
   };
 
+  /** Half a note column, for hit-testing. Columns widen when a round has fewer
+   * notes, so this cannot be a constant. */
+  const halfColumn = (): number => {
+    const a = view.geom.writeArea;
+    return (a.x1 - a.x0) / Math.max(1, round.solutionSteps.length) / 2;
+  };
+
   /** Mark the note just written as wrong and let it fade, rather than blinking
    * out of existence — a correction on paper, not a deletion. */
   const flashWrong = (i: number): void => {
@@ -118,11 +125,17 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
     if (busy) return;
     const { x, y } = view.toGlyph(ev);
 
+    // Outside the band is not a target at all — not a wrong note, no sound, no
+    // flash. Treating a tap on empty staff as an attempt punished aiming at
+    // somewhere the answer could never go.
+    const a = view.geom.writeArea;
+    if (x < a.x0 || x > a.x1 || y < a.yTop || y > a.yBottom) return;
+
     // A tap on a written note takes it (and everything after) back off.
     const hitIndex = written.findIndex((w, i) => {
       const dx = Math.abs(x - view.geom.slotX(i));
       const dy = Math.abs(y - view.geom.y(w.step));
-      return dx < 14 && dy < 7;
+      return dx < halfColumn() && dy < 7;
     });
     if (hitIndex !== -1) {
       audio.playCancel();
