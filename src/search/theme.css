@@ -1,0 +1,16 @@
+/* theme.css — ToneSearch's palette: neon purple on near-black. Structure lives
+   in shell/base.css; this file is only the tokens it reads. */
+
+:root {
+  --bg: #0b0713;
+  --bg-2: #120a1f;
+  --neon: #c77dff;
+  --neon-bright: #e0aaff;
+  --neon-dim: rgba(199, 125, 255, 0.14);
+  --neon-mute: rgba(199, 125, 255, 0.4); /* non-clickable / idle cell border */
+  --wrong: #f2688c; /* rose-red for a wrong tap, pairs with the neon purple */
+  --text: #ece7f5;
+  --text-dim: rgba(236, 231, 245, 0.55);
+  --text-faint: rgba(236, 231, 245, 0.33); /* app chrome: difficulty, counter, install, mute */
+  --cell-fill: rgba(199, 125, 255, 0.06);
+}

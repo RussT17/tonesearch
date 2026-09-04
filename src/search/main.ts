@@ -1,7 +1,8 @@
 // main.ts — ToneSearch. Wires the shared session to the diamond-grid board and
 // the grid-based round generator.
 
-import '../style.css';
+import '../shell/base.css';
+import './theme.css';
 import { configFor } from '../core/config';
 import { generatePuzzle, type Puzzle } from '../core/generate';
 import { categoryLabel, type Pattern } from '../core/pattern';

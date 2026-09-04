@@ -3,7 +3,7 @@
 // launcher icon is literally a selected note tile: same border, fill, glow, corner
 // radius, glyph weight and app background as a tile you light up mid-solve.
 //
-// It does NOT redraw the tile. It loads src/style.css into a headless Chromium,
+// It does NOT redraw the tile. It loads ToneSearch's real CSS into headless Chromium,
 // builds a real `<div class="cell selected">` with a `TS` glyph, and screenshots
 // it. So the mark cannot drift from the game — restyle `.cell.selected` and the
 // icons follow on the next run. (This is why the dep is Playwright, not an image
@@ -41,7 +41,13 @@ const REF_SIDE = (CELL_FILL * TOKEN_PITCH_MAX) / Math.SQRT2; // ≈ 49.6px squar
 const REF_DIAG = REF_SIDE * Math.SQRT2; // ≈ 70.2px point-to-point, the visual width
 const GLYPH_RATIO = 0.42; // render.ts: fontPx = side * 0.42
 
-const css = await readFile(join(ROOT, 'src/style.css'), 'utf8');
+// The same two files ToneSearch itself loads: shared structure, then its
+// palette. Read in that order so the tokens win, exactly as in the app.
+const css = (
+  await Promise.all(
+    ['src/shell/base.css', 'src/search/theme.css'].map((f) => readFile(join(ROOT, f), 'utf8')),
+  )
+).join('\n');
 
 /**
  * The page: the app's real stylesheet, one real `.cell.selected`, on the app's
