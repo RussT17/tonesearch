@@ -51,6 +51,17 @@ export interface SessionApi {
   voiceMidi(midi: number): void;
 }
 
+/**
+ * A run of label text, `em` on the words that carry the question.
+ *
+ * Spans rather than a markup string: the shell builds text nodes from these, so
+ * a pattern name is never parsed as HTML on its way to the screen.
+ */
+export interface LabelSpan {
+  readonly text: string;
+  readonly em?: boolean;
+}
+
 /** Everything that differs between the two games. */
 export interface GameDef<R extends Round> {
   /** localStorage key for the remembered difficulty. */
@@ -60,7 +71,7 @@ export interface GameDef<R extends Round> {
   /** Optional per-round replacement for it. ToneSearch's label is fixed — the
    * shape below it IS the question. ToneScribe's question is a sentence that
    * changes every round, so it belongs here rather than in the small caption. */
-  label?: (round: R) => string;
+  label?: (round: R) => readonly LabelSpan[];
   /** Start-gate wordmark (may carry markup) and one-line explainer. */
   title: string;
   subtitle: string;
@@ -128,6 +139,18 @@ export function startSession<R extends Round>(root: HTMLElement, def: GameDef<R>
     audio.playRootBassNear(notes[0]! - iv[0]!, midis[0]!, when);
   };
 
+  /** Render the per-round instruction, emphasising the words it hangs on. */
+  const setLabel = (spans: readonly LabelSpan[]): void => {
+    shell.labelEl.replaceChildren(
+      ...spans.map((s) => {
+        if (!s.em) return document.createTextNode(s.text);
+        const strong = document.createElement('strong');
+        strong.textContent = s.text;
+        return strong;
+      }),
+    );
+  };
+
   /** Push current progress to both views: the board and the target row. */
   const paint = (): void => {
     board.paint(notes);
@@ -184,7 +207,7 @@ export function startSession<R extends Round>(root: HTMLElement, def: GameDef<R>
     shell.giveUpBtn.classList.remove('lit'); // clear the held Give Up highlight
     round = def.newRound(tier);
     notes = [];
-    if (def.label) shell.labelEl.textContent = def.label(round);
+    if (def.label) setLabel(def.label(round));
     shell.nameEl.textContent = def.caption(round);
     const bandW = shell.tokensEl.parentElement?.clientWidth ?? window.innerWidth;
     const pitch = targetPitch(bandW - 24);

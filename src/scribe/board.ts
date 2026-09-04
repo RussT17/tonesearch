@@ -17,6 +17,7 @@ import * as audio from '../shell/audio';
 import type { Shell } from '../shell/chrome';
 import type { Board, SessionApi } from '../shell/session';
 import { paintNote, renderStaff, type StaffView } from './staffview';
+import { chordLayout } from './chordlayout';
 import { GLYPH_SPACE, accidentalMetrics, accidentalPath } from './glyphs';
 import { SOLVE_CHORD_DELAY_MS } from '../shell/session';
 import { isCorrectAt, type ScribeRound } from './round';
@@ -31,10 +32,6 @@ const ACC_LABEL: Record<Exclude<Accidental, null>, string> = {
   [1]: 'Write a sharp',
   [2]: 'Write a double sharp',
 };
-
-/** How long a wrong note lives: it flies in like a correct one, then fades.
- * Matches the CSS (0.3s delay + 0.34s fade) with a little slack. */
-const WRONG_FADE_MS = 680;
 
 export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRound> {
   const wrap = document.createElement('div');
@@ -113,15 +110,6 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
     return (a.x1 - a.x0) / Math.max(1, round.solutionSteps.length) / 2;
   };
 
-  /** Mark the note just written as wrong and let it fade, rather than blinking
-   * out of existence — a correction on paper, not a deletion. */
-  const flashWrong = (i: number): void => {
-    const g = view.slots[i];
-    if (!g) return;
-    g.classList.add('wrong');
-    setTimeout(() => g.classList.remove('wrong'), WRONG_FADE_MS);
-  };
-
   const onTap = (ev: PointerEvent): void => {
     if (busy) return;
     const { x, y } = view.toGlyph(ev);
@@ -151,13 +139,6 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
     const step = view.geom.stepAtY(y);
     const note = noteAt(step, round.sig, armed);
 
-    // Show it before judging it, and commit to `written` FIRST. api.propose is
-    // synchronous and calls back into paint(), which reconciles against the
-    // answer whenever our trail is a different length from the session's — so
-    // appending after the call appended a second time.
-    const previous = written;
-    written = [...written, { step, acc: armed }];
-    repaint();
     // Sound the pitch actually written — the tapped step's octave, right or
     // wrong — rather than a pitch class folded into a reference octave.
     api.voiceMidi(midiOf(step, note));
@@ -165,14 +146,47 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
     // Judge the note here, not in the session: its check is root-relative and
     // accepts ANY first note (it derives the root from that note), so a wrong
     // accidental on note one used to sail through.
-    if (!isCorrectAt(round, i, step, armed) || !api.propose(note)) {
-      flashWrong(i);
+    //
+    // A wrong note is never written: the row you aimed at washes red for a
+    // moment and the staff is unchanged, which reads as the attempt not landing
+    // rather than as ink appearing and then being taken back.
+    if (!isCorrectAt(round, i, step, armed)) {
+      view.flashRow(step);
+      return;
+    }
+
+    // Right — so write it, committing to `written` FIRST. api.propose is
+    // synchronous and calls back into paint(), which reconciles against the
+    // answer whenever our trail is a different length from the session's — so
+    // appending after the call appended a second time.
+    const previous = written;
+    written = [...written, { step, acc: armed }];
+    repaint();
+    if (!api.propose(note)) {
       written = previous;
-      setTimeout(repaint, WRONG_FADE_MS);
+      view.flashRow(step);
+      repaint();
       return;
     }
     armed = null; // an accidental applies only to the note just written
     paintArmed();
+  };
+
+  /** Collapse the written row into one engraved chord, centred in the band. */
+  const squash = (): void => {
+    const lay = chordLayout(written, view.geom.y);
+    const area = view.geom.writeArea;
+    // Centre the chord's ink, not its noteheads: a stack with two accidental
+    // columns hangs a long way left, and centring on the heads would push that
+    // back over the key signature.
+    const origin = (area.x0 + area.x1) / 2 - (lay.x0 + lay.x1) / 2;
+    written.forEach((w, i) => {
+      const g = view.slots[i];
+      const place = lay.places[i];
+      if (!g || !place) return;
+      paintNote(g, view.geom, w.step, w.acc, place.accX ?? undefined);
+      g.setAttribute('transform', `translate(${origin + place.dx} 0)`);
+    });
   };
 
   const build = (): void => {
@@ -216,16 +230,15 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
       }
       repaint();
       // On a completed chord, slide the noteheads together into a stack — how
-      // the same notes would actually be engraved. Held until the chord sounds,
-      // so the last note lands in its own place first and the stack coincides
-      // with hearing it. Scales stay written out and run instead.
+      // the same notes would actually be engraved, seconds displaced and
+      // accidentals in columns (chordlayout.ts) rather than simply piled on one
+      // x. Held until the chord sounds, so the last note lands in its own place
+      // first and the stack coincides with hearing it. Scales stay written out
+      // and run instead.
       const complete = notes.length === round.solutionSteps.length;
       if (complete && round.pattern.kind !== 'scale' && round.pattern.kind !== 'note') {
-        const x0 = view.geom.slotX(0);
         clearTimeout(squashTimer);
-        squashTimer = setTimeout(() => {
-          view.slots.forEach((g) => g.setAttribute('transform', `translate(${x0} 0)`));
-        }, SOLVE_CHORD_DELAY_MS);
+        squashTimer = setTimeout(squash, SOLVE_CHORD_DELAY_MS);
       }
     },
     setBusy(b) {

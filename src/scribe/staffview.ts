@@ -86,6 +86,8 @@ export interface StaffView {
   slots: SVGGElement[];
   /** Where a pointer event lands, in glyph units. */
   toGlyph: (ev: PointerEvent) => { x: number; y: number };
+  /** Wash the line or space at `step` in the wrong-note colour, once. */
+  flashRow: (step: Step) => void;
 }
 
 /**
@@ -143,6 +145,14 @@ export function renderStaff(
     height: bandBottom - bandTop, rx: 3,
   }));
 
+  // The wrong-note wash: the whole line or space you aimed at, lit for a
+  // moment. Under the staff lines and the notes, so it reads as the paper
+  // colouring rather than as something written. Idle at zero opacity.
+  const flash = el('rect', {
+    class: 'row-flash', x: writeX0, y: 0, width: writeX1 - writeX0, height: 0, rx: 1.5,
+  });
+  svg.append(flash);
+
   // Ledger lines the band reaches, drawn BEFORE anything is written. Engraving
   // only draws these under a note, but a player needs something to aim at — with
   // nothing there, placing a note above the staff is guesswork.
@@ -196,6 +206,22 @@ export function renderStaff(
     return Math.max(playable.lo, Math.min(playable.hi, raw));
   };
 
+  // A line is thinner than a space, so the wash matches what you were aiming at
+  // rather than always covering the same slab of staff.
+  const flashRow = (step: Step): void => {
+    const onLine = Math.abs(step - bottom) % 2 === 0;
+    const h = onLine ? GLYPH_SPACE * 0.55 : GLYPH_SPACE * 0.92;
+    flash.setAttribute('y', String(y(step) - h / 2));
+    flash.setAttribute('height', String(h));
+    // Web Animations rather than a CSS class: a second wrong note on the same
+    // row has to restart the wash, and re-triggering a CSS animation means
+    // removing the class and forcing a reflow.
+    flash.animate?.(
+      [{ opacity: 0.3 }, { opacity: 0.3, offset: 0.3 }, { opacity: 0 }],
+      { duration: 620, easing: 'ease-out' },
+    );
+  };
+
   const toGlyph = (ev: PointerEvent): { x: number; y: number } => {
     const r = svg.getBoundingClientRect();
     const scale = STAFF_W / r.width; // uniform: preserveAspectRatio keeps it square
@@ -210,6 +236,7 @@ export function renderStaff(
     },
     slots,
     toGlyph,
+    flashRow,
   };
 }
 
@@ -223,12 +250,18 @@ export function ledgerSteps(step: Step, clef: Clef): Step[] {
   return out;
 }
 
-/** Draw a notehead (plus any ledger lines and accidental) into a slot group. */
+/**
+ * Draw a notehead (plus any ledger lines and accidental) into a slot group.
+ *
+ * `accX` overrides where the accidental starts, for a stacked chord whose
+ * accidentals have been given columns of their own (see chordlayout.ts).
+ */
 export function paintNote(
   g: SVGGElement,
   geom: StaffGeometry,
   step: Step,
   acc: Accidental,
+  accX?: number,
 ): void {
   while (g.firstChild) g.removeChild(g.firstChild);
   const cy = geom.y(step);
@@ -242,8 +275,9 @@ export function paintNote(
   if (acc !== null) {
     // Sits left of the notehead, clear of it by a hair — as engraved.
     const m = accidentalMetrics(acc);
+    const x = accX ?? cx - 8 - m.width;
     g.append(el('path', {
-      class: 'ink', d: accidentalPath(acc), transform: `translate(${cx - 8 - m.width} ${cy})`,
+      class: 'ink', d: accidentalPath(acc), transform: `translate(${x} ${cy})`,
     }));
   }
 }

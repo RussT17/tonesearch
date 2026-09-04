@@ -3,7 +3,7 @@
 
 import '../shell/base.css';
 import './theme.css';
-import { keyLine, promptLine } from '../core/prompt';
+import { sentenceSpans } from '../core/prompt';
 import { startSession, type GameDef } from '../shell/session';
 import { createStaffBoard } from './board';
 import { generateScribeRound, type ScribeRound } from './round';
@@ -13,7 +13,7 @@ const toneScribe: GameDef<ScribeRound> = {
   // The instruction is the question, so it sits where ToneSearch puts "Find
   // this sequence" — above the intervals it refers to.
   bandLabel: 'Write this sequence',
-  label: (round) => `${promptLine(round)} ${keyLine(round)}`,
+  label: (round) => sentenceSpans(round),
   title: 'Tone<span class="hand">Scribe</span>',
   subtitle: 'Write the notes on the staff.',
   newRound: (tier) => generateScribeRound(tier, Math.floor(Math.random() * 1e9)),

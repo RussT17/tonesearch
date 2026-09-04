@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { keyLine, promptLine, promptSentence, romanNumeral, solfege } from '../core/prompt';
+import {
+  keyLine,
+  promptLine,
+  promptSentence,
+  romanNumeral,
+  sentenceSpans,
+  solfege,
+  spansText,
+} from '../core/prompt';
 import { ALL_PATTERNS, sampleHarmony } from '../core/harmony';
 import type { Pattern, Tier } from '../core/pattern';
 import type { Fifths, Mode } from '../core/theory';
@@ -76,12 +84,54 @@ describe('promptLine', () => {
 
   it('falls back to naming the chord when no numeral is derivable', () => {
     const shell: Pattern = { display: 'Dominant 7th', kind: 'chord', intervals: [R, m7], qualifier: 'shell' };
-    expect(promptLine(ctx(shell, 1))).toBe('Write a Dominant 7th (shell) on sol');
+    expect(promptLine(ctx(shell, 1))).toBe('Write a Dominant 7th chord (shell) rooted on sol');
+    const sus: Pattern = { display: '7sus4', kind: 'chord', intervals: [R, 3, P5, m7] };
+    expect(promptLine(ctx(sus, -2))).toBe('Write a 7sus4 chord rooted on te');
   });
 
   it('names the key separately, since the staff shows the signature', () => {
     expect(keyLine(ctx(chord([R, M3, P5]), 0, 'major', 2))).toBe('in D major');
     expect(keyLine(ctx(chord([R, m3, P5]), 0, 'minor', 1))).toBe('in E minor');
+  });
+});
+
+// The words a player has to act on are emphasised; the connective tissue is not.
+// Spans, not markup: the shell turns these into text nodes, so a pattern name
+// like "m7♭5" can never be read as HTML.
+describe('sentenceSpans', () => {
+  const ctx = (p: Pattern, degree: Fifths, mode: Mode = 'major', sig: Fifths = 2) => ({
+    pattern: p,
+    mode,
+    degree,
+    sig,
+  });
+
+  it('emphasises the chord, its root and the key — and nothing else', () => {
+    const sus: Pattern = { display: '7sus4', kind: 'chord', intervals: [R, 3, P5, m7] };
+    const spans = sentenceSpans(ctx(sus, -2, 'minor', 6));
+    expect(spans.filter((s) => s.em).map((s) => s.text)).toEqual([
+      '7sus4 chord', 'te', 'D♯ minor',
+    ]);
+  });
+
+  it('emphasises both halves of an interval, and the degree of a single note', () => {
+    const iv: Pattern = { display: 'Perfect 4th', kind: 'interval', intervals: [R, -1] };
+    expect(sentenceSpans(ctx(iv, 1)).filter((s) => s.em).map((s) => s.text)).toEqual([
+      'sol', 'Perfect 4th', 'D major',
+    ]);
+    const one: Pattern = { display: 'Note', kind: 'note', intervals: [R] };
+    expect(sentenceSpans(ctx(one, 3)).filter((s) => s.em).map((s) => s.text)).toEqual([
+      'la', 'D major',
+    ]);
+  });
+
+  it('says exactly what the plain sentence says', () => {
+    for (const pattern of ALL_PATTERNS) {
+      for (const degree of [-2, 0, 1, 4] as Fifths[]) {
+        const c = ctx(pattern, degree);
+        expect(spansText(sentenceSpans(c))).toBe(`${promptLine(c)} ${keyLine(c)}`);
+      }
+    }
   });
 });
 

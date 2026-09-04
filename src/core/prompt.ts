@@ -83,40 +83,79 @@ export interface PromptContext {
 }
 
 /**
- * The instruction line, e.g.
- *   "Write the iii7 chord"          (chord/triad, quality derivable)
- *   "Write a Dominant 7th on sol"   (chord/triad, rootless — no numeral)
- *   "Write sol and its Perfect 5th" (interval — two notes, so both are named)
- *   "Write the Major Pentatonic from do"  (scale)
- *   "Write la"                      (single note)
- * Pair with `keyLine` for the "in D major" half — the staff shows the key
- * signature, so the two are deliberately separate.
+ * A run of prompt text, `em` where the word carries the question.
+ *
+ * The prompt is built as spans rather than a string with markup in it because
+ * the renderer builds text nodes from these — nothing here is ever parsed as
+ * HTML, so a pattern name containing an angle bracket stays a pattern name.
  */
-export function promptLine(ctx: PromptContext): string {
+export interface Span {
+  readonly text: string;
+  readonly em?: boolean;
+}
+
+const t = (text: string): Span => ({ text });
+const em = (text: string): Span => ({ text, em: true });
+
+/** The instruction line as spans; see `promptLine` for the wording. */
+export function promptSpans(ctx: PromptContext): Span[] {
   const { pattern, degree } = ctx;
   const where = degreeWord(degree);
   switch (pattern.kind) {
     case 'note':
-      return `Write ${where}`;
+      return [t('Write '), em(where)];
     case 'interval':
       // Names BOTH notes on purpose: "a P4 above sol" reads as one note to
       // write, when an interval round wants the degree and the note above it.
-      return `Write ${where} and its ${pattern.display}`;
+      return [t('Write '), em(where), t(' and its '), em(pattern.display)];
     case 'scale':
-      return `Write the ${pattern.display} from ${where}`;
+      return [t('Write the '), em(pattern.display), t(' from '), em(where)];
     case 'triad':
     case 'chord': {
       const numeral = romanNumeral(pattern, degree);
-      if (numeral) return `Write the ${numeral} chord`;
-      const qualifier = pattern.qualifier ? ` (${pattern.qualifier})` : '';
-      return `Write a ${pattern.display}${qualifier} on ${where}`;
+      if (numeral) return [t('Write the '), em(`${numeral} chord`)];
+      // "a 7sus4 on te" leaves "7sus4" doing two jobs; naming the chord and
+      // then its root splits the question into the two things being asked.
+      const qualifier: Span[] = pattern.qualifier ? [t(` (${pattern.qualifier})`)] : [];
+      return [
+        t('Write a '), em(`${pattern.display} chord`), ...qualifier,
+        t(' rooted on '), em(where),
+      ];
     }
   }
 }
 
+/** The key half as spans; see `keyLine`. */
+export const keySpans = (ctx: PromptContext): Span[] => [
+  t('in '),
+  em(keyName(ctx.mode, ctx.sig)),
+];
+
+/** The whole instruction as spans, e.g. "Write a **7sus4 chord** rooted on
+ * **te** in **D♯ minor**". */
+export const sentenceSpans = (ctx: PromptContext): Span[] => [
+  ...promptSpans(ctx), t(' '), ...keySpans(ctx),
+];
+
+/** Spans flattened back to plain text. */
+export const spansText = (spans: readonly Span[]): string =>
+  spans.map((s) => s.text).join('');
+
+/**
+ * The instruction line, e.g.
+ *   "Write the iii7 chord"                    (chord/triad, quality derivable)
+ *   "Write a 7sus4 chord rooted on te"        (chord/triad, rootless — no numeral)
+ *   "Write sol and its Perfect 5th"           (interval — two notes, so both are named)
+ *   "Write the Major Pentatonic from do"      (scale)
+ *   "Write la"                                (single note)
+ * Pair with `keyLine` for the "in D major" half — the staff shows the key
+ * signature, so the two are deliberately separate.
+ */
+export const promptLine = (ctx: PromptContext): string => spansText(promptSpans(ctx));
+
 /** The key half of the prompt, e.g. "in D major". */
-export const keyLine = (ctx: PromptContext): string => `in ${keyName(ctx.mode, ctx.sig)}`;
+export const keyLine = (ctx: PromptContext): string => spansText(keySpans(ctx));
 
 /** The whole instruction as one sentence. */
 export const promptSentence = (ctx: PromptContext): string =>
-  `${promptLine(ctx)} ${keyLine(ctx)}.`;
+  `${spansText(sentenceSpans(ctx))}.`;

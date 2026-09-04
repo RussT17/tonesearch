@@ -86,6 +86,12 @@
   filter: none;
 }
 
+/* The words the question actually turns on — the chord, its root, the key. */
+.tokens-label strong {
+  font-weight: 650;
+  color: var(--text);
+}
+
 /* The instruction is a sentence, not a section heading — ToneSearch's small
    uppercase label would shout it. */
 .tokens-label {
@@ -175,21 +181,14 @@
 .staff .note {
   transition: transform 420ms cubic-bezier(0.34, 0.9, 0.3, 1);
 }
-/* A wrong note is a correction, not a deletion: it turns red and fades, so the
-   eye follows what happened instead of finding the note simply gone. */
-.staff .note.wrong :is(path, line) {
+/* A wrong note is never written. The line or space you aimed at washes red for
+   a moment instead — the correction lands on the staff position that was wrong,
+   which is the thing to look at, and no ink appears only to be taken back.
+   Opacity is driven by the animation in staffview.ts; at rest it is invisible. */
+.staff .row-flash {
   fill: var(--wrong);
-  stroke: var(--wrong);
-}
-/* It flies in from the right exactly like a correct note — killing the
-   transition here made it snap into place instead, since the class lands while
-   that slide is still running. The fade is delayed so the note arrives first. */
-.staff .note.wrong {
-  animation: inkWrong 0.34s ease 0.3s forwards;
-}
-@keyframes inkWrong {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  opacity: 0;
+  pointer-events: none;
 }
 .staff .acc {
   font-size: 13px;
