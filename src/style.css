@@ -152,6 +152,14 @@ body {
   text-shadow: 0 0 6px var(--neon-dim);
   line-height: 1;
   white-space: nowrap;
+  /* Centre the LETTERS, not the line box. A line box reserves descender room,
+     and our labels (F♯, m3, R) have no descenders, so `place-items: center`
+     left the visible mark sitting slightly high. Trimming the box to cap-height
+     and baseline centres the ink instead. Font-agnostic on purpose: the size of
+     that gap depends on the font's metrics, and `system-ui` is a different font
+     on every platform, so a hand-tuned offset would be wrong somewhere.
+     Unsupported browsers simply keep the old line-box centring. */
+  text-box: trim-both cap alphabetic;
 }
 /* Selected cells are lit the same in both views. A selected grid cell is not
    .clickable (game.ts drops that once it's in the selection), so it would fall

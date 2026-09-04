@@ -46,12 +46,10 @@ const css = await readFile(join(ROOT, 'src/style.css'), 'utf8');
 /**
  * The page: the app's real stylesheet, one real `.cell.selected`, on the app's
  * real body background. `markFrac` is the diamond's point-to-point width as a
- * fraction of the canvas's shorter side. `nudge` optically centers the glyph
- * (see measureGlyphNudge).
+ * fraction of the canvas's shorter side.
  */
-const page = (w, h, markFrac, nudge = 0) => {
+const page = (w, h, markFrac) => {
   const scale = (Math.min(w, h) * markFrac) / REF_DIAG;
-  const fontPx = REF_SIDE * GLYPH_RATIO;
   return `<!doctype html><html><head><meta charset="utf-8"><style>
 ${css}
 /* --- icon harness (not part of the app) --- */
@@ -61,56 +59,21 @@ body { display: grid; place-items: center; }
    stay in the same ratio to the tile as they are in the running game. */
 .mark { transform: scale(${scale}); transform-origin: center; }
 .mark .cell { position: relative; width: ${REF_SIDE}px; height: ${REF_SIDE}px; }
-/* The translate is applied BEFORE the counter-rotation, and the cell's own
-   +45° cancels the glyph's -45°, so this reads as a true straight-down shift
-   on screen rather than a diagonal one. */
-.mark .glyph {
-  font-size: ${fontPx}px;
-  transform: rotate(-45deg) translateY(${nudge * fontPx}px);
-}
+.mark .glyph { font-size: ${REF_SIDE * GLYPH_RATIO}px; }
 </style></head><body>
 <div class="mark"><div class="cell selected"><span class="glyph">${MARK_TEXT}</span></div></div>
 </body></html>`;
 };
-
-/**
- * How far to drop the glyph so its INK is centered, as a fraction of font size.
- *
- * `place-items: center` centers the text's line box, not the letters inside it.
- * A line box reserves descender room, and "TS" has no descenders, so the visible
- * mass hangs above centre. Measure the real ink box and correct by the exact
- * difference — the numbers are font-specific, so this is measured on whatever
- * font the machine resolved rather than hardcoded.
- */
-async function measureGlyphNudge(tab) {
-  await tab.setContent(page(400, 400, 0.6));
-  await tab.evaluate(() => document.fonts.ready);
-  return tab.evaluate(() => {
-    const g = document.querySelector('.glyph');
-    const cs = getComputedStyle(g);
-    const size = parseFloat(cs.fontSize);
-    const c = document.createElement('canvas').getContext('2d');
-    c.font = `${cs.fontWeight} ${size}px ${cs.fontFamily}`;
-    const m = c.measureText(g.textContent);
-    // Baseline offset inside a line-height:1 box, then the ink centre against it.
-    const half = (size - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2;
-    const baseline = half + m.fontBoundingBoxAscent;
-    const inkCentre = baseline + (m.actualBoundingBoxDescent - m.actualBoundingBoxAscent) / 2;
-    return (size / 2 - inkCentre) / size;
-  });
-}
 
 const browser = await chromium.launch(
   process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {},
 );
 const tab = await browser.newPage();
 
-const nudge = await measureGlyphNudge(tab);
-
 let reportedFont = null;
 const render = async (w, h, markFrac, file) => {
   await tab.setViewportSize({ width: w, height: h });
-  await tab.setContent(page(w, h, markFrac, nudge), { waitUntil: 'load' });
+  await tab.setContent(page(w, h, markFrac), { waitUntil: 'load' });
   await tab.evaluate(() => document.fonts.ready);
   reportedFont ??= await tab.evaluate(() => {
     const el = document.querySelector('.glyph');
