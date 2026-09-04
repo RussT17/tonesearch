@@ -54,6 +54,10 @@ export interface GameDef<R extends Round> {
   storageKey: string;
   /** Caption above the target sequence, e.g. "Find this sequence". */
   bandLabel: string;
+  /** Optional per-round replacement for it. ToneSearch's label is fixed — the
+   * shape below it IS the question. ToneScribe's question is a sentence that
+   * changes every round, so it belongs here rather than in the small caption. */
+  label?: (round: R) => string;
   /** Start-gate wordmark (may carry markup) and one-line explainer. */
   title: string;
   subtitle: string;
@@ -152,6 +156,7 @@ export function startSession<R extends Round>(root: HTMLElement, def: GameDef<R>
     shell.giveUpBtn.classList.remove('lit'); // clear the held Give Up highlight
     round = def.newRound(tier);
     notes = [];
+    if (def.label) shell.labelEl.textContent = def.label(round);
     shell.nameEl.textContent = def.caption(round);
     const bandW = shell.tokensEl.parentElement?.clientWidth ?? window.innerWidth;
     const pitch = targetPitch(bandW - 24);

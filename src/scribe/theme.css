@@ -1,0 +1,200 @@
+/* theme.css — ToneScribe's palette and its staff. Ink on paper, the way a
+   manuscript page reads. Structure comes from shell/base.css; this file
+   re-points the tokens it uses and adds the parts only ToneScribe has. */
+
+:root {
+  --bg: #f4f2ec; /* paper */
+  --bg-2: #fbfaf7; /* the sheet, lit from above */
+  --neon: #1c1a17; /* "ink" — base.css's accent token, so borders read black */
+  --neon-bright: #000;
+  --neon-dim: rgba(28, 26, 23, 0.1);
+  --neon-mute: rgba(28, 26, 23, 0.32); /* idle borders */
+  --wrong: #b3261e; /* a correction mark, not a neon flash */
+  --text: #14120f;
+  --text-dim: rgba(20, 18, 15, 0.6);
+  --text-faint: rgba(20, 18, 15, 0.42);
+  --cell-fill: rgba(28, 26, 23, 0.04);
+
+  --rule: rgba(28, 26, 23, 0.85); /* staff lines */
+  --band: rgba(28, 26, 23, 0.07); /* the range you must write inside */
+  --band-edge: rgba(28, 26, 23, 0.28);
+}
+
+/* Ink does not glow. base.css leans on box-shadow for ToneSearch's neon bloom,
+   which on paper reads as a smudge — so the same states are drawn with weight
+   and fill instead. */
+.cell.clickable,
+.token-diamond {
+  box-shadow: none;
+  background: transparent;
+}
+.cell.selected {
+  background: var(--neon);
+  box-shadow: none;
+}
+.cell.selected .glyph {
+  color: var(--bg-2); /* knocked out of the filled diamond */
+  text-shadow: none;
+}
+.cell .glyph {
+  text-shadow: none;
+}
+.solved .cell.selected {
+  background: var(--neon);
+  box-shadow: none;
+  animation: none;
+}
+.path-overlay polyline {
+  stroke: var(--neon);
+  filter: none;
+}
+.solved .path-overlay polyline {
+  filter: none;
+}
+
+/* --- the wordmark: ToneSearch's face for "Tone", a written hand for "Scribe" --- */
+.start-title {
+  text-shadow: none;
+}
+.start-title .hand {
+  /* Whatever written face the platform has. macOS/iOS ship Snell Roundhand and
+     Bradley Hand; Windows has Segoe Script. Elsewhere this lands on generic
+     cursive — a graceful step down rather than tofu, which is why no font file
+     is bundled. */
+  font-family: 'Snell Roundhand', 'Bradley Hand', 'Segoe Script', 'Brush Script MT', cursive;
+  font-weight: 600;
+  font-size: 1.15em; /* written faces run small next to a UI sans */
+  padding-left: 0.04em;
+}
+.start-btn .hex path {
+  fill: transparent;
+  stroke: var(--neon);
+}
+.start-btn:active .hex path,
+.start-btn.lit .hex path {
+  fill: var(--neon);
+  stroke: var(--neon);
+}
+.start-btn:active span,
+.start-btn.lit span {
+  color: var(--bg-2);
+}
+.start-btn .hex {
+  filter: none;
+}
+.start-btn:active .hex,
+.start-btn.lit .hex {
+  filter: none;
+}
+
+/* The instruction is a sentence, not a section heading — ToneSearch's small
+   uppercase label would shout it. */
+.tokens-label {
+  text-transform: none;
+  letter-spacing: 0.01em;
+  font-size: 1.05rem;
+  line-height: 1.35;
+  color: var(--text);
+  max-width: 22rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* --- the staff --- */
+.staff-wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+.staff {
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+  display: block;
+  touch-action: manipulation;
+}
+.staff .rule {
+  stroke: var(--rule);
+  stroke-width: 1.1;
+  shape-rendering: crispEdges; /* hairlines stay even at any scale */
+}
+.staff .ledger {
+  stroke: var(--rule);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+}
+.staff .ink {
+  fill: var(--neon);
+}
+/* The band you must write inside. */
+.staff .band {
+  fill: var(--band);
+}
+.staff .band-edge {
+  stroke: var(--band-edge);
+  stroke-width: 0.9;
+  stroke-dasharray: 3 3;
+  fill: none;
+}
+.staff .slot-hit {
+  fill: transparent;
+  cursor: pointer;
+}
+.staff .caret {
+  fill: none;
+  stroke: var(--band-edge);
+  stroke-width: 1;
+}
+/* A note slides to its chord position on a solve; see board.ts. */
+.staff .note {
+  transition: transform 420ms cubic-bezier(0.34, 0.9, 0.3, 1);
+}
+.staff .note.wrong {
+  animation: inkWrong 0.42s ease;
+}
+@keyframes inkWrong {
+  0%, 100% { opacity: 1; }
+  25% { opacity: 0.25; }
+}
+.staff .acc {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--neon);
+  dominant-baseline: middle;
+  text-anchor: middle;
+}
+.staff .keysig {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--neon);
+  dominant-baseline: middle;
+  text-anchor: middle;
+}
+
+/* --- accidental buttons --- */
+.accidentals {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+.acc-btn {
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  min-width: 2.6rem;
+  min-height: 2.6rem;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--neon-mute);
+  border-radius: 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.acc-btn.armed {
+  background: var(--neon);
+  border-color: var(--neon);
+  color: var(--bg-2);
+}
