@@ -11,11 +11,13 @@ import type { Fifths, Mode } from '../core/theory';
 import { makeRng, randInt, type Rng } from '../core/rng';
 import type { Round } from '../shell/session';
 import {
+  accidentalFor,
   ascendingSteps,
   midiOf,
   pickRange,
   playableRange,
   validStarts,
+  type Accidental,
   type Clef,
   type StaffRange,
   type Step,
@@ -34,6 +36,30 @@ const LEDGER_BY_TIER: Record<Tier, number> = { easy: 0, medium: 1, hard: 2, expe
 const allowance = (clef: Clef, ledger: number): { lo: Step; hi: Step } =>
   playableRange(clef, ledger);
 
+/**
+ * Is what was written at `step` with `acc` what the round wants for position `i`?
+ *
+ * Compares the WRITING, not just the pitch, and neither half is covered by the
+ * session's check.
+ *
+ * `isPrefix` is root-relative: with a single note it computes the root FROM that
+ * note and then confirms the note matches it, which is true of every note — so
+ * the first note of a round passed no matter what accidental it carried. The
+ * step alone ignores accidentals entirely, since F♮ and F♯ share a line.
+ *
+ * And comparing the resulting NOTE is still too loose: in a flat key, writing a
+ * flat on a note the signature already flats gives the same pitch, so a
+ * redundant accidental would pass. Reading the signature instead of restating it
+ * is the skill this app is for, so the accidental has to match exactly — null
+ * where the signature already does the work.
+ */
+export const isCorrectAt = (
+  round: ScribeRound,
+  i: number,
+  step: Step,
+  acc: Accidental,
+): boolean => step === round.solutionSteps[i] && acc === round.solutionAccidentals[i];
+
 export interface ScribeRound extends Round {
   pattern: Pattern;
   solutionNotes: Fifths[];
@@ -44,6 +70,9 @@ export interface ScribeRound extends Round {
   solutionSteps: Step[];
   /** Those positions as sounding pitches, so the ear matches the eye. */
   solutionMidis: number[];
+  /** The accidental each note must carry — null where the key signature already
+   * spells it, which is most of them. */
+  solutionAccidentals: Accidental[];
   // Functional context, for the spoken prompt.
   mode: Mode;
   degree: Fifths;
@@ -131,6 +160,9 @@ function build(
     range,
     solutionSteps,
     solutionMidis: solutionSteps.map((step, i) => midiOf(step, solutionNotes[i]!)),
+    solutionAccidentals: solutionSteps.map(
+      (step, i) => accidentalFor(step, harmony.sig, solutionNotes[i]!) ?? null,
+    ),
     mode: harmony.mode,
     degree: harmony.degree,
     sig: harmony.sig,

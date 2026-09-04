@@ -29,12 +29,22 @@ const STEP_Y = GLYPH_SPACE / 2; // one step is half a space
 const PAD_L = 8;
 const KEY_GAP = 12; // clef → signature, and signature → writing area
 const SIG_GAP = 1.2; // between adjacent key-signature accidentals
-const MIN_WRITE_W = 150; // writing area at the widest key signature
+/**
+ * Writing area at the widest key signature — and, indirectly, how big everything
+ * is. The SVG scales to fill its container, so the viewBox width sets the scale:
+ * a narrower staff in glyph units renders LARGER on screen. Cut from 150 to 102
+ * to make the whole staff ~25% bigger, which is really about the height of a
+ * line-or-space, since that is the click target. Notes end up closer together;
+ * ledger lines narrow to match (see ledgerHalf).
+ */
+const MIN_WRITE_W = 102;
 
 /** Widest clef and key signature, so the staff's outer size never changes —
  * a staff that resized per round made the whole page jump between them. */
 const CLEF_W_MAX = Math.max(clefWidth('treble'), clefWidth('bass'));
-const SIG_W_MAX = 7 * (accidentalMetrics(-1).width + SIG_GAP);
+// Six, not seven: harmony.config tops out at 6 sharps / 6 flats, and reserving
+// a seventh would shrink every staff to hold a signature that never appears.
+const SIG_W_MAX = 6 * (accidentalMetrics(-1).width + SIG_GAP);
 const STAFF_W = PAD_L + CLEF_W_MAX + KEY_GAP + SIG_W_MAX + KEY_GAP + MIN_WRITE_W + PAD_L;
 
 /** Vertical extent: three ledger lines either way, plus room for the treble
@@ -59,6 +69,9 @@ export interface StaffGeometry {
   /** The region a note may be written in — the grey band. Taps outside it do
    * nothing at all. */
   writeArea: { x0: number; x1: number; yTop: number; yBottom: number };
+  /** Half-width of a ledger line — column-dependent, so notes drawn later use
+   * the same reach as the guides drawn up front. */
+  ledgerHalf: number;
   /** Nearest step to a y in glyph units, clamped to what the clef can show. */
   stepAtY: (y: number) => Step;
   width: number;
@@ -107,6 +120,9 @@ export function renderStaff(
   // the right; this spreads three wider than five, and centres a single note.
   const colW = (writeX1 - writeX0) / slotCount;
   const slotX = (i: number): number => writeX0 + colW * (i + 0.5);
+  // A ledger line reaches past its notehead but must stay inside its column,
+  // which is narrower now that the staff is drawn larger.
+  const ledgerHalf = Math.max(7.5, Math.min(10, colW / 2 - 2));
 
   const minY = y(playable.hi) - 12;
   const maxY = Math.max(y(playable.lo), 78) + 10;
@@ -134,7 +150,7 @@ export function renderStaff(
     for (let i = 0; i < slotCount; i++) {
       svg.append(el('line', {
         class: 'ledger-guide',
-        x1: slotX(i) - 11, y1: y(ls), x2: slotX(i) + 11, y2: y(ls),
+        x1: slotX(i) - ledgerHalf, y1: y(ls), x2: slotX(i) + ledgerHalf, y2: y(ls),
       }));
     }
   }
@@ -189,7 +205,7 @@ export function renderStaff(
   return {
     svg,
     geom: {
-      clef, y, slotX, parkX, stepAtY, width: STAFF_W, height, minY,
+      clef, y, slotX, parkX, ledgerHalf, stepAtY, width: STAFF_W, height, minY,
       writeArea: { x0: writeX0, x1: writeX1, yTop: bandTop, yBottom: bandBottom },
     },
     slots,
@@ -219,7 +235,8 @@ export function paintNote(
   const cx = 0; // slots are positioned by transform, so draw at the origin
 
   for (const ls of ledgerSteps(step, geom.clef)) {
-    g.append(el('line', { class: 'ledger', x1: cx - 11, y1: geom.y(ls), x2: cx + 11, y2: geom.y(ls) }));
+    const h = geom.ledgerHalf;
+    g.append(el('line', { class: 'ledger', x1: cx - h, y1: geom.y(ls), x2: cx + h, y2: geom.y(ls) }));
   }
   g.append(el('path', { class: 'ink', d: noteheadPath(cx, cy, GLYPH_SPACE), transform: `rotate(-18 ${cx} ${cy})` }));
   if (acc !== null) {

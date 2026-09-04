@@ -67,7 +67,7 @@ describe('promptLine', () => {
     expect(promptLine(ctx({ display: 'Note', kind: 'note', intervals: [R] }, 3))).toBe('Write la');
     expect(
       promptLine(ctx({ display: 'Perfect 5th', kind: 'interval', intervals: [R, P5] }, 1)),
-    ).toBe('Write a Perfect 5th above sol');
+    ).toBe('Write sol and its Perfect 5th');
     expect(
       promptLine(ctx({ display: 'Major Pentatonic', kind: 'scale', intervals: [R, M2, M3] }, 0)),
     ).toBe('Write the Major Pentatonic from do');

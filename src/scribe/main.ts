@@ -3,7 +3,6 @@
 
 import '../shell/base.css';
 import './theme.css';
-import { categoryLabel } from '../core/pattern';
 import { keyLine, promptLine } from '../core/prompt';
 import { startSession, type GameDef } from '../shell/session';
 import { createStaffBoard } from './board';
@@ -18,12 +17,9 @@ const toneScribe: GameDef<ScribeRound> = {
   title: 'Tone<span class="hand">Scribe</span>',
   subtitle: 'Write the notes on the staff.',
   newRound: (tier) => generateScribeRound(tier, Math.floor(Math.random() * 1e9)),
-  // The quality in words, under the intervals — the same secondary hint
-  // ToneSearch gives, and a check on the roman numeral above.
-  caption: (round) =>
-    round.pattern.kind === 'note'
-      ? ''
-      : `${round.pattern.display} ${categoryLabel(round.pattern.kind)}`,
+  // Nothing under the intervals: ToneSearch puts the pattern's name there
+  // because its prompt is a shape, but here the line above already names it.
+  caption: () => '',
   // The staff writes the octave down, so it must sound where it is written.
   midisFor: (round, notes) => notes.map((_n, i) => round.solutionMidis[i]!),
   createBoard: createStaffBoard,

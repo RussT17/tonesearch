@@ -111,6 +111,12 @@
   color: var(--bg-2);
 }
 
+/* The pattern name lives in the instruction above the intervals, so the slot
+   ToneSearch reserves for it below them is dead space here. */
+.seq-name {
+  display: none;
+}
+
 /* --- the staff --- */
 .staff-wrap {
   width: 100%;
@@ -175,14 +181,15 @@
   fill: var(--wrong);
   stroke: var(--wrong);
 }
+/* It flies in from the right exactly like a correct note — killing the
+   transition here made it snap into place instead, since the class lands while
+   that slide is still running. The fade is delayed so the note arrives first. */
 .staff .note.wrong {
-  animation: inkWrong 0.42s ease forwards;
-  transition: none; /* fade in place; do not also slide back to the park */
+  animation: inkWrong 0.34s ease 0.3s forwards;
 }
 @keyframes inkWrong {
-  0% { opacity: 1; }
-  35% { opacity: 1; }
-  100% { opacity: 0; }
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 .staff .acc {
   font-size: 13px;

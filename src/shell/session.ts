@@ -260,6 +260,8 @@ export function startSession<R extends Round>(root: HTMLElement, def: GameDef<R>
     });
     const arped = answer.length * stepMs;
     setTimeout(() => {
+      // Same reasoning as onSolve: the reveal already sounded that one pitch.
+      if (answer.length === 1) return;
       const midis = def.midisFor?.(round, answer);
       if (round.pattern.kind === 'scale') {
         // cap the reveal with a quick run up

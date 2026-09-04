@@ -19,7 +19,7 @@ import type { Board, SessionApi } from '../shell/session';
 import { paintNote, renderStaff, type StaffView } from './staffview';
 import { GLYPH_SPACE, accidentalMetrics, accidentalPath } from './glyphs';
 import { SOLVE_CHORD_DELAY_MS } from '../shell/session';
-import type { ScribeRound } from './round';
+import { isCorrectAt, type ScribeRound } from './round';
 
 /** Accidentals always offered. Doubles are added only when a round needs one. */
 const BASE_ACCIDENTALS: Exclude<Accidental, null>[] = [-1, 0, 1];
@@ -32,8 +32,9 @@ const ACC_LABEL: Record<Exclude<Accidental, null>, string> = {
   [2]: 'Write a double sharp',
 };
 
-/** How long a wrong note takes to fade away. Matches the CSS animation. */
-const WRONG_FADE_MS = 420;
+/** How long a wrong note lives: it flies in like a correct one, then fades.
+ * Matches the CSS (0.3s delay + 0.34s fade) with a little slack. */
+const WRONG_FADE_MS = 680;
 
 export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRound> {
   const wrap = document.createElement('div');
@@ -161,10 +162,10 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
     // wrong — rather than a pitch class folded into a reference octave.
     api.voiceMidi(midiOf(step, note));
 
-    // The line matters as much as the letter: a right note written an octave off
-    // is wrong here, and the session's root-relative check would accept it.
-    const rightLine = step === round.solutionSteps[i];
-    if (!rightLine || !api.propose(note)) {
+    // Judge the note here, not in the session: its check is root-relative and
+    // accepts ANY first note (it derives the root from that note), so a wrong
+    // accidental on note one used to sail through.
+    if (!isCorrectAt(round, i, step, armed) || !api.propose(note)) {
       flashWrong(i);
       written = previous;
       setTimeout(repaint, WRONG_FADE_MS);
@@ -192,6 +193,10 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
         (window as unknown as { __answer: unknown }).__answer = {
           steps: round.solutionSteps,
           notes: round.solutionNotes,
+          // Which accidental each note needs written on it (null = the key
+          // signature already spells it). Exposed so a test can drive the
+          // accidental buttons the way a player would.
+          accs: round.solutionAccidentals,
           sig: round.sig,
           clef: round.clef,
         };
@@ -206,7 +211,7 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
       if (notes.length !== written.length) {
         written = round.solutionSteps.slice(0, notes.length).map((step, i) => ({
           step,
-          acc: accidentalOf(step, round.sig, round.solutionNotes[i]!),
+          acc: round.solutionAccidentals[i]!,
         }));
       }
       repaint();
@@ -227,14 +232,4 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
       busy = b;
     },
   };
-}
-
-/** Which accidental the answer needs written at `step` — mirrors staff.ts's
- * accidentalFor, but never undefined here because the step came from the
- * answer itself. */
-function accidentalOf(step: Step, sig: number, note: number): Accidental {
-  for (const a of [null, 0, 1, -1, 2, -2] as Accidental[]) {
-    if (noteAt(step, sig, a) === note) return a;
-  }
-  return null;
 }

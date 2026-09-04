@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { generateScribeRound } from '../scribe/round';
+import { generateScribeRound, isCorrectAt } from '../scribe/round';
 import {
   bottomLineStep,
   ledgerLinesIn,
@@ -8,6 +8,8 @@ import {
   writtenSpan,
 } from '../core/staff';
 import type { Tier } from '../core/pattern';
+import { isPrefix } from '../core/generate';
+import { noteAt, type Accidental } from '../core/staff';
 
 const TIERS: Tier[] = ['easy', 'medium', 'hard', 'expert'];
 const rounds = (tier: Tier, n = 400) =>
@@ -117,6 +119,87 @@ describe('sounding pitch follows the written position', () => {
           expect(m).toBeGreaterThan(31); // below G1 is subterranean
           expect(m).toBeLessThan(96); // above B6 is piccolo territory
         }
+      }
+    }
+  });
+});
+
+// The bug this guards: a right line with the WRONG accidental was accepted as
+// the first note of a round. Three checks each looked sufficient and none was.
+describe('judging a written note', () => {
+  const ACCS: Accidental[] = [null, -1, 0, 1];
+
+  it('accepts only the accidental the answer actually calls for', () => {
+    for (const tier of TIERS) {
+      for (const r of rounds(tier, 300)) {
+        const step = r.solutionSteps[0]!;
+        for (const acc of ACCS) {
+          expect(isCorrectAt(r, 0, step, acc)).toBe(acc === r.solutionAccidentals[0]);
+        }
+      }
+    }
+  });
+
+  // The subtle half: in a flat key, flatting a note the signature already flats
+  // gives the SAME pitch. Comparing notes let that through; reading the
+  // signature rather than restating it is the skill, so it has to be rejected.
+  it('rejects a redundant accidental, even though the pitch is right', () => {
+    let seen = 0;
+    for (const tier of TIERS) {
+      for (const r of rounds(tier, 300)) {
+        const step = r.solutionSteps[0]!;
+        if (r.solutionAccidentals[0] !== null) continue; // signature spells it
+        for (const acc of [-1, 0, 1] as Accidental[]) {
+          if (noteAt(step, r.sig, acc) !== r.solutionNotes[0]!) continue; // changes the pitch
+          expect(isCorrectAt(r, 0, step, acc)).toBe(false); // same pitch, wrong writing
+          seen++;
+        }
+      }
+    }
+    expect(seen).toBeGreaterThan(50); // the case really does arise
+  });
+
+  it('rejects the right spelling on the wrong line', () => {
+    for (const r of rounds('medium', 300)) {
+      const acc = r.solutionAccidentals[0]!;
+      expect(isCorrectAt(r, 0, r.solutionSteps[0]! + 7, acc)).toBe(false); // an octave up
+      expect(isCorrectAt(r, 0, r.solutionSteps[0]! - 7, acc)).toBe(false);
+    }
+  });
+
+  it('accepts the answer itself, at every position', () => {
+    for (const tier of TIERS) {
+      for (const r of rounds(tier, 200)) {
+        r.solutionSteps.forEach((step, i) => {
+          expect(isCorrectAt(r, i, step, r.solutionAccidentals[i]!)).toBe(true);
+        });
+      }
+    }
+  });
+
+  // Why the board cannot lean on the session: isPrefix derives the root from
+  // the first note, so it is satisfied by literally any first note.
+  it('is stricter than isPrefix, which waves the first note through', () => {
+    let seen = 0;
+    for (const r of rounds('medium', 300)) {
+      const step = r.solutionSteps[0]!;
+      for (const acc of [-1, 0, 1] as Accidental[]) {
+        const written = noteAt(step, r.sig, acc);
+        if (acc === r.solutionAccidentals[0]) continue;
+        expect(isPrefix([written], r.pattern)).toBe(true); // the session would allow it
+        expect(isCorrectAt(r, 0, step, acc)).toBe(false); // the board does not
+        seen++;
+      }
+    }
+    expect(seen).toBeGreaterThan(50);
+  });
+
+  it('spells every answer it demands', () => {
+    for (const tier of TIERS) {
+      for (const r of rounds(tier, 200)) {
+        r.solutionSteps.forEach((step, i) => {
+          expect(noteAt(step, r.sig, r.solutionAccidentals[i]!)).toBe(r.solutionNotes[i]!);
+        });
       }
     }
   });

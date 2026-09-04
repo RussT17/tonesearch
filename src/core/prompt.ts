@@ -86,7 +86,7 @@ export interface PromptContext {
  * The instruction line, e.g.
  *   "Write the iii7 chord"          (chord/triad, quality derivable)
  *   "Write a Dominant 7th on sol"   (chord/triad, rootless — no numeral)
- *   "Write a Perfect 5th above sol" (interval)
+ *   "Write sol and its Perfect 5th" (interval — two notes, so both are named)
  *   "Write the Major Pentatonic from do"  (scale)
  *   "Write la"                      (single note)
  * Pair with `keyLine` for the "in D major" half — the staff shows the key
@@ -99,7 +99,9 @@ export function promptLine(ctx: PromptContext): string {
     case 'note':
       return `Write ${where}`;
     case 'interval':
-      return `Write a ${pattern.display} above ${where}`;
+      // Names BOTH notes on purpose: "a P4 above sol" reads as one note to
+      // write, when an interval round wants the degree and the note above it.
+      return `Write ${where} and its ${pattern.display}`;
     case 'scale':
       return `Write the ${pattern.display} from ${where}`;
     case 'triad':
