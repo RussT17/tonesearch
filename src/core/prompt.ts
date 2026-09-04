@@ -13,13 +13,16 @@ import type { Fifths, Mode } from './theory';
 import { degreeName, keyName } from './theory';
 
 // ── Interval constants on the line of fifths (see theory.ts) ────────────────
+const R = 0;
 const M3 = 4;
 const m3 = -3;
+const P5 = 1;
 const d5 = -6;
 const A5 = 8;
 const m7 = -2;
 const M7 = 5;
 const d7 = -9;
+
 
 /** Movable-do solfège, do-based in both modes (so minor's third is "me", which
  * is how the user asked for it — not la-based minor). Keyed by the degree label
@@ -42,10 +45,23 @@ const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'] as const;
  * The roman numeral for a chord on `degree` whose quality comes from
  * `intervals`, e.g. "iii7", "V7", "ii°", "♭VII".
  *
- * Returns null when the pattern does not carry enough to name a quality — a
- * rootless or shell voicing may have no third, and inversions reorder but do
- * not add one. A wrong numeral teaches the wrong thing, so callers fall back to
- * naming the chord in words instead of guessing.
+ * Returns null unless the numeral names EVERY tone the chord has. A numeral has
+ * only four things to say — a root, a third, a fifth, a seventh — so a sixth, a
+ * ninth, an eleventh, a thirteenth or an alteration has nowhere to go in it, and
+ * the suffix itself covers only certain fifth/seventh pairs (there is no numeral
+ * for a ♭5 under a major third, or a ♯5 under a major seventh). Dropping such a
+ * tone does not abbreviate the chord, it renames it: a minor triad with an added
+ * ♭6 is not "v", and the player would then be asked to write a different chord
+ * from the one named. About half the chord patterns carry such a tone, so this
+ * is the common case rather than the edge.
+ *
+ * Omissions are fine in the other direction — a shell voicing with no fifth is
+ * still V7 — so the test is that nothing is present which the numeral does not
+ * account for.
+ *
+ * A rootless or shell voicing may also have no third at all, and then the
+ * quality cannot be derived; callers fall back to naming the chord in words,
+ * which is where the pattern's own hand-written name gets used.
  */
 export function romanNumeral(pattern: Pattern, degree: Fifths): string | null {
   const label = degreeName(degree); // e.g. "5", "♭3"
@@ -57,23 +73,45 @@ export function romanNumeral(pattern: Pattern, degree: Fifths): string | null {
   const major = has(M3);
   const minor = has(m3);
   if (major === minor) return null; // no third, or (impossibly) both → don't guess
+  const third = major ? M3 : m3;
+
+  // Quality suffix, most specific first — and, alongside it, exactly which fifth
+  // and seventh that suffix claims the chord has.
+  let suffix = '';
+  let fifth: Fifths = P5;
+  let seventh: Fifths | null = null;
+  if (minor && has(d5)) {
+    fifth = d5;
+    if (has(d7)) { suffix = '°7'; seventh = d7; } else if (has(m7)) { suffix = 'ø7'; seventh = m7; } else suffix = '°';
+  } else if (major && has(A5)) {
+    fifth = A5;
+    if (has(m7)) { suffix = '+7'; seventh = m7; } else suffix = '+';
+  } else if (has(m7)) {
+    suffix = '7';
+    seventh = m7;
+  } else if (has(M7)) {
+    suffix = 'maj7';
+    seventh = M7;
+  }
+
+  const named = new Set<Fifths>([R, third, fifth]);
+  if (seventh !== null) named.add(seventh);
+  if (pattern.intervals.some((iv) => !named.has(iv))) return null;
 
   let numeral: string = ROMAN[num - 1]!;
   if (minor) numeral = numeral.toLowerCase();
-
-  // Quality suffix, most specific first.
-  let suffix = '';
-  if (minor && has(d5)) suffix = has(d7) ? '°7' : has(m7) ? 'ø7' : '°';
-  else if (major && has(A5)) suffix = has(m7) ? '+7' : '+';
-  else if (has(m7)) suffix = '7';
-  else if (has(M7)) suffix = 'maj7';
-
   return accidental + numeral + suffix;
 }
 
 /** How a degree is spoken in a prompt: solfège when it has a syllable, else the
  * plain degree number ("♭♭7"). */
 const degreeWord = (degree: Fifths): string => solfege(degree) ?? `degree ${degreeName(degree)}`;
+
+/** "a" or "an" before a chord name. Decided by the first LETTER, not by how the
+ * name is said aloud: "add9" wants "an", while an initialism would need to know
+ * that "m7♭5" is said "em" but "maj7♯11" is said "major" — same letter, and
+ * guessing would be wrong about as often as it was right. */
+const article = (name: string): string => (/^[aeiou]/i.test(name) ? 'an' : 'a');
 
 export interface PromptContext {
   pattern: Pattern;
@@ -112,13 +150,15 @@ export function promptSpans(ctx: PromptContext): Span[] {
       return [t('Write the '), em(pattern.display), t(' from '), em(where)];
     case 'triad':
     case 'chord': {
+      // The voicing is a real part of the question — the target row shows it,
+      // but only this says what it is called.
+      const qualifier: Span[] = pattern.qualifier ? [t(` (${pattern.qualifier})`)] : [];
       const numeral = romanNumeral(pattern, degree);
-      if (numeral) return [t('Write the '), em(`${numeral} chord`)];
+      if (numeral) return [t('Write the '), em(`${numeral} chord`), ...qualifier];
       // "a 7sus4 on te" leaves "7sus4" doing two jobs; naming the chord and
       // then its root splits the question into the two things being asked.
-      const qualifier: Span[] = pattern.qualifier ? [t(` (${pattern.qualifier})`)] : [];
       return [
-        t('Write a '), em(`${pattern.display} chord`), ...qualifier,
+        t(`Write ${article(pattern.display)} `), em(`${pattern.display} chord`), ...qualifier,
         t(' rooted on '), em(where),
       ];
     }
