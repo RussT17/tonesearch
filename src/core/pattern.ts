@@ -9,7 +9,7 @@ import type { Fifths } from './theory';
 export type Tier = 'easy' | 'medium' | 'hard' | 'expert';
 
 /** Category — drives the caption word and (for 'scale') the solve/reveal run-up. */
-export type Kind = 'interval' | 'triad' | 'chord' | 'scale';
+export type Kind = 'note' | 'interval' | 'triad' | 'chord' | 'scale';
 
 export interface Pattern {
   display: string; // human name, e.g. 'Dominant 7th', 'm7♭5', 'Major'
@@ -22,6 +22,7 @@ export interface Pattern {
 // everything ≥4 notes read as "Chord"; two-note guide-tone/3-6 pairs are also
 // "Chord" (they name a chord); bare dyads are "Interval"; scales "Scale".
 const CATEGORY_LABEL: Record<Kind, string> = {
+  note: 'Note',
   interval: 'Interval',
   triad: 'Triad',
   chord: 'Chord',

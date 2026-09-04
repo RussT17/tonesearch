@@ -2,7 +2,7 @@
 // Build the empty grid shape by 3×3 accretion, lay a random self-avoiding path
 // inside it, name that path from a (pattern, root), fill the rest with decoys.
 
-import type { Fifths } from './theory';
+import type { Fifths, Mode } from './theory';
 import type { Pattern } from './pattern';
 import type { Config } from './config';
 import { sampleHarmony } from './harmony';
@@ -21,6 +21,12 @@ export interface Puzzle {
   solutionNotes: Fifths[];
   cells: Cell[];
   solutionPath: number[]; // cell ids, in token order
+  /** The functional context the pattern was drawn in (docs/09). ToneSearch
+   * never shows this — it asks you to find a shape, not to name its function —
+   * but ToneScribe's prompt is built from it, so generation keeps it. */
+  mode: Mode;
+  degree: Fifths;
+  sig: Fifths;
 }
 
 interface Coord {
@@ -158,7 +164,7 @@ function fillDecoys(notes: Fifths[], n: number, cfg: Config, rng: Rng): Fifths[]
 export function generatePuzzle(cfg: Config, seed: number): Puzzle {
   const rng = makeRng(seed);
 
-  const { pattern, rootNote: root } = sampleHarmony(cfg.tier, rng);
+  const { pattern, rootNote: root, mode, degree, sig } = sampleHarmony(cfg.tier, rng);
   const solutionNotes = pattern.intervals.map((iv) => root + iv);
   const len = pattern.intervals.length;
 
@@ -186,7 +192,7 @@ export function generatePuzzle(cfg: Config, seed: number): Puzzle {
       return id;
     });
 
-    return { pattern, root, solutionNotes, cells, solutionPath };
+    return { pattern, root, solutionNotes, cells, solutionPath, mode, degree, sig };
   }
   throw new Error('Puzzle generation failed after retries');
 }
