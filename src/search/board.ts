@@ -72,8 +72,24 @@ export function createGridBoard(shell: Shell, api: SessionApi): Board<Puzzle> {
         }
         const note = noteOf.get(id)!;
         api.voice(note); // voice the candidate before judging it
-        if (api.propose(note)) selection = next;
-        else flashWrong(id); // adjacent but wrong interval → gentle reddish flash
+        // Commit to `selection` BEFORE proposing. api.propose is synchronous and
+        // paints from inside the call, and paint() re-derives the path from
+        // puzzle.solutionPath whenever our trail is a different length from the
+        // session's — a reconciliation that belongs to the give-up reveal alone.
+        // Assigning afterwards left the two out of step on every single tap, so
+        // the board drew the generator's path instead of the player's: your tap
+        // was accepted, but the cell that lit up was the solution's, and the
+        // tappable ring around it was computed from that cell too. It gave the
+        // answer away, and it hid the whole point of ToneSearch — that a
+        // sequence is accepted from ANY starting note, in any key, not just the
+        // one the generator happened to hide.
+        const previous = selection;
+        selection = next;
+        if (!api.propose(note)) {
+          selection = previous;
+          flashWrong(id); // adjacent but wrong interval → gentle reddish flash
+          repaint();
+        }
       };
     });
   };
