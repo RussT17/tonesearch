@@ -11,9 +11,15 @@
 // ToneScribe names the key, so there is one correct answer and the octave is
 // part of it. The board rejects a note written on the wrong line before the
 // session ever sees it.
+//
+// Which is also why there is no undo here, though ToneSearch has one. There you
+// walk a path through the grid and can wander into a dead end, so backing out is
+// part of playing. Here every note is judged as it lands and a wrong one is
+// never written, so what is on the staff is always right as far as it goes:
+// there is nothing to take back, and a take-it-back gesture would only compete
+// with placing the next note on a line already occupied.
 
 import { midiOf, noteAt, type Accidental, type Step } from '../core/staff';
-import * as audio from '../shell/audio';
 import type { Shell } from '../shell/chrome';
 import type { Board, SessionApi } from '../shell/session';
 import { paintNote, renderStaff, type StaffView } from './staffview';
@@ -103,13 +109,6 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
     });
   };
 
-  /** Half a note column, for hit-testing. Columns widen when a round has fewer
-   * notes, so this cannot be a constant. */
-  const halfColumn = (): number => {
-    const a = view.geom.writeArea;
-    return (a.x1 - a.x0) / Math.max(1, round.solutionSteps.length) / 2;
-  };
-
   const onTap = (ev: PointerEvent): void => {
     if (busy) return;
     const { x, y } = view.toGlyph(ev);
@@ -119,20 +118,6 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
     // somewhere the answer could never go.
     const a = view.geom.writeArea;
     if (x < a.x0 || x > a.x1 || y < a.yTop || y > a.yBottom) return;
-
-    // A tap on a written note takes it (and everything after) back off.
-    const hitIndex = written.findIndex((w, i) => {
-      const dx = Math.abs(x - view.geom.slotX(i));
-      const dy = Math.abs(y - view.geom.y(w.step));
-      return dx < halfColumn() && dy < 7;
-    });
-    if (hitIndex !== -1) {
-      audio.playCancel();
-      written = written.slice(0, hitIndex);
-      api.rewind(hitIndex);
-      repaint();
-      return;
-    }
 
     const i = written.length;
     if (i >= round.solutionSteps.length) return;
