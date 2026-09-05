@@ -146,11 +146,12 @@ export function wireChrome(shell: Shell): void {
   // PWA install: suppress the browser's automatic prompt and expose our own
   // corner button instead.
   //
-  // beforeinstallprompt cannot be the only way in. Safari has never fired it, and
+  // beforeinstallprompt cannot be the only way in: Safari has never fired it, and
   // Chrome withholds it whenever it decides the page is already covered by an
-  // installed app — which is exactly ToneScribe's situation, since it lives at
-  // /tonesearch/scribe/, inside ToneSearch's own /tonesearch/ scope. So the
-  // button also appears without the event, and then says how to install by hand.
+  // installed app. So the button also appears without the event, and then says
+  // how to install by hand. (The two games used to trip that second case on each
+  // other — ToneScribe sat inside ToneSearch's scope — which is why they are now
+  // siblings under a scope-less landing page; see vite.config.ts.)
   let deferredPrompt: BeforeInstallPromptEvent | null = null;
   const standalone =
     window.matchMedia('(display-mode: standalone)').matches ||

@@ -9,7 +9,7 @@
 - **Toolchain:** Vite + TypeScript + Vitest. Node via `brew install node`
   (Homebrew present; no password needed).
 - **Deploy:** a GitHub Action builds on push and publishes to Pages (replaces the
-  current "deploy from branch" hello-world). Vite `base: '/tonesearch/'` for
+  current "deploy from branch" hello-world). Vite `base: '/tonesearch/search/'` for
   correct asset URLs on project Pages.
 - **Architecture:** a **pure core** (no DOM/audio — fully unit-tested) behind a
   thin **shell** (DOM render, Web Audio, input). This is the single most
@@ -238,7 +238,9 @@ src/… (incl. geometry.ts) · .github/workflows/deploy.yml · docs/ (unchanged)
 - **Local dev:** `npm run dev` (Vite hot-reload). `npm test` (Vitest watch).
 - **Deploy:** push → Action runs `npm ci && npm run build` → uploads `dist` →
   Pages. Requires switching the Pages **Source** to *GitHub Actions* (a one-time
-  settings change I'll walk you through). `base: '/tonesearch/'` set in Vite.
+  settings change I'll walk you through). `base: '/tonesearch/search/'` set in
+  Vite. (Originally `/tonesearch/`; the app moved one level down when ToneScribe
+  arrived, so neither PWA's scope contains the other — see vite.config.ts.)
 - The current root `index.html` hello-world is replaced by the app entry.
 
 ## 10. Build sequence (each step ends runnable & committable)

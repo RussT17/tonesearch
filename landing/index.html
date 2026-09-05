@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>ToneSearch &amp; ToneScribe</title>
+    <meta name="description" content="Two ear- and eye-training games: find the interval shape in the grid, or write it on the staff." />
+    <meta name="theme-color" content="#141118" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./search/favicon-32.png" />
+    <!-- No manifest here, on purpose. A manifest at this path would claim
+         /tonesearch/ as an app scope, which is exactly what stopped the two
+         games being installable side by side: whichever was installed second
+         replaced the first. The apps own their own scopes one level down; this
+         page is only a door. -->
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100svh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2.5rem;
+        padding: 2rem 1.25rem;
+        background: #141118;
+        color: #ece7f5;
+        font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        text-align: center;
+      }
+      h1 { margin: 0; font-size: 1.05rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(236, 231, 245, 0.45); }
+      .apps { display: flex; flex-wrap: wrap; gap: 1.25rem; justify-content: center; width: 100%; max-width: 40rem; }
+      a.app {
+        flex: 1 1 15rem;
+        display: block;
+        padding: 1.9rem 1.4rem;
+        border-radius: 16px;
+        border: 1.5px solid;
+        text-decoration: none;
+        transition: transform 0.14s ease, box-shadow 0.14s ease;
+      }
+      a.app:hover, a.app:focus-visible { transform: translateY(-2px); }
+      .name { font-size: 1.6rem; font-weight: 700; letter-spacing: 0.01em; }
+      .desc { margin-top: 0.5rem; font-size: 0.9rem; line-height: 1.45; }
+      /* Each card wears its own app's colours, so the choice is the thing you
+         already recognise from the home screen. */
+      .search { background: #0b0713; border-color: #c77dff; color: #ece7f5; }
+      .search:hover, .search:focus-visible { box-shadow: 0 0 22px rgba(199, 125, 255, 0.4); }
+      .search .desc { color: rgba(236, 231, 245, 0.6); }
+      .scribe { background: #f4f2ec; border-color: #1c1a17; color: #14120f; }
+      .scribe:hover, .scribe:focus-visible { box-shadow: 0 0 22px rgba(0, 0, 0, 0.45); }
+      .scribe .desc { color: rgba(20, 18, 15, 0.6); }
+      .scribe .hand { font-family: "Snell Roundhand", "Bradley Hand", "Segoe Script", "Brush Script MT", cursive; font-size: 1.15em; }
+      footer { font-size: 0.8rem; color: rgba(236, 231, 245, 0.35); max-width: 26rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Two games</h1>
+    <div class="apps">
+      <a class="app search" href="./search/">
+        <div class="name">ToneSearch</div>
+        <div class="desc">Find the interval sequence in the grid.</div>
+      </a>
+      <a class="app scribe" href="./scribe/">
+        <div class="name">Tone<span class="hand">Scribe</span></div>
+        <div class="desc">Write the notes on the staff.</div>
+      </a>
+    </div>
+    <footer>Each installs as its own app — open one and use its Install button.</footer>
+  </body>
+</html>
