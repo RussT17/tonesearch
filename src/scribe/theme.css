@@ -178,6 +178,19 @@
   to { opacity: 1; }
 }
 
+/* The question now sits above the play surface (see mountShell's bandFirst), so
+   it needs air under the top bar — and the staff belongs directly under the
+   question rather than floating halfway down the page, which is what centring
+   the stage did once the band moved above it. The slack lands below instead,
+   between the accidentals and Give Up, which keeps Give Up where ToneSearch
+   puts it. */
+.tokens-band {
+  margin-top: 1.1rem;
+}
+.stage {
+  align-items: flex-start;
+}
+
 /* --- the staff --- */
 .staff-wrap {
   width: 100%;

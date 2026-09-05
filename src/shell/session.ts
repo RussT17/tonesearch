@@ -85,6 +85,8 @@ export interface GameDef<R extends Round> {
   playShape?: PlayShape;
   /** How the target row is drawn. Defaults to diamonds. */
   tokenShape?: TokenShape;
+  /** Put the target band above the play surface instead of below it. */
+  bandFirst?: boolean;
   /** What fills the lower half of each target card as the sequence is
    * completed — ToneScribe names the note each interval turns out to be. */
   tokenSubLabels?: (round: R) => string[];
@@ -127,7 +129,7 @@ const lastVoiced = (notes: number[]): number => {
 };
 
 export function startSession<R extends Round>(root: HTMLElement, def: GameDef<R>): void {
-  const shell: Shell = mountShell(root, def.bandLabel);
+  const shell: Shell = mountShell(root, def.bandLabel, def.bandFirst);
 
   let round!: R;
   let board!: Board<R>;
@@ -322,12 +324,16 @@ export function startSession<R extends Round>(root: HTMLElement, def: GameDef<R>
     shell.stageEl.classList.remove('solved');
     shell.tokensEl.classList.remove('solved');
     shell.stageEl.classList.add('fade');
-    shell.bandEl.classList.add('fade'); // fade the target sequence + text in sync
+    // Fade the target sequence, its text and Give Up in sync — they are one
+    // puzzle, even though Give Up sits outside the band in the DOM.
+    shell.bandEl.classList.add('fade');
+    shell.giveUpBtn.classList.add('fade');
     setTimeout(() => {
       setPhase('playing'); // before newRound so its paint shows live affordances
       newRound();
       shell.stageEl.classList.remove('fade');
       shell.bandEl.classList.remove('fade');
+      shell.giveUpBtn.classList.remove('fade');
     }, 350);
   }
 

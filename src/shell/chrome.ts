@@ -62,8 +62,16 @@ function manualInstallStep(): string {
   return 'To install: use your browser’s menu — look for “Install”.';
 }
 
-/** Build the static app skeleton once; returns handles to the live regions. */
-export function mountShell(root: HTMLElement, bandLabel: string): Shell {
+/**
+ * Build the static app skeleton once; returns handles to the live regions.
+ *
+ * `bandFirst` puts the target band above the play surface. ToneSearch reads
+ * top-down from the grid you are hunting in to the shape you are hunting for,
+ * which is the order you look at them in. ToneScribe is the other way round: its
+ * band carries the question in words, and a question belongs above the staff it
+ * is answered on, not below it.
+ */
+export function mountShell(root: HTMLElement, bandLabel: string, bandFirst = false): Shell {
   root.innerHTML = '';
 
   const topbar = el('div', 'topbar');
@@ -87,12 +95,13 @@ export function mountShell(root: HTMLElement, bandLabel: string): Shell {
   const tokensEl = el('div', 'tokens');
   tokensEl.setAttribute('aria-label', 'Target intervals');
   const nameEl = el('div', 'seq-name'); // subtle chord/interval name (always visible)
-  // Give Up belongs to the current puzzle → sits inside the band, so it fades
-  // out/in with the rest of the puzzle on transition.
+  // Give Up belongs to the current puzzle, so it fades with the band — but it is
+  // a sibling of it, not a child: the band moves above the play surface in
+  // ToneScribe and Give Up must not travel with it into the middle of the page.
   const giveUpBtn = el<HTMLButtonElement>('button', 'giveup', 'Give Up');
   giveUpBtn.setAttribute('aria-label', 'Give up and reveal the answer');
   const bandEl = el('div', 'tokens-band');
-  bandEl.append(labelEl, tokensEl, nameEl, giveUpBtn);
+  bandEl.append(labelEl, tokensEl, nameEl);
 
   // App-level chrome: borderless, pinned to the screen corners (low prominence).
   const installBtn = el<HTMLButtonElement>('button', 'install');
@@ -104,7 +113,8 @@ export function mountShell(root: HTMLElement, bandLabel: string): Shell {
   // Flexible bottom spacer: pulls the stage + target group upward.
   const footSpacer = el('div', 'foot-spacer');
 
-  root.append(topbar, stageEl, bandEl, footSpacer, installBtn, muteBtn);
+  const middle = bandFirst ? [bandEl, stageEl] : [stageEl, bandEl];
+  root.append(topbar, ...middle, giveUpBtn, footSpacer, installBtn, muteBtn);
   return { difficultyEl, counterEl, stageEl, tokensEl, bandEl, labelEl, nameEl, installBtn, giveUpBtn, muteBtn };
 }
 

@@ -29,6 +29,9 @@ const toneScribe: GameDef<ScribeRound> = {
   // turns out to name underneath, written in as you get it. By the end the row
   // reads as the worked answer, which is the thing worth keeping.
   tokenShape: 'card',
+  // The question goes above the staff it is answered on. Reading it under the
+  // staff meant looking down for the prompt and back up to write, every round.
+  bandFirst: true,
   tokenSubLabels: (round) => round.solutionNotes.map(noteName),
   newRound: (tier) => generateScribeRound(tier, Math.floor(Math.random() * 1e9)),
   // Nothing under the intervals: ToneSearch puts the pattern's name there

@@ -199,10 +199,11 @@ body {
   min-height: 1em; /* reserve space so the row doesn't jump between puzzles */
 }
 
-/* --- Give Up: a puzzle control — under the sequence name, fades with the band --- */
+/* --- Give Up: a puzzle control — sits under the band (or under the play surface
+   when the band is on top) and fades with it --- */
 .giveup {
   display: block;
-  margin: 2rem auto 0; /* separate Give Up from the label/tokens/name group above */
+  margin: 2rem auto 0; /* separate Give Up from whatever group sits above it */
   font: inherit;
   font-size: 0.9rem;
   color: var(--text-dim);
@@ -282,10 +283,12 @@ body {
 
 /* --- transitions & feedback --- */
 .stage,
+.giveup,
 .tokens-band {
   transition: opacity 350ms ease;
 }
 .stage.fade,
+.giveup.fade,
 .tokens-band.fade {
   opacity: 0;
 }
