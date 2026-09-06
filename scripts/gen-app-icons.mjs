@@ -219,7 +219,18 @@ svg.mark path { fill: var(--neon); }
    right on a page of them and reads as a grey smudge at icon size, where the
    mark has to hold up next to solid black app icons. */
 .mark.scribe { position: relative; }
-.mark.scribe svg.staff { display: block; width: 100%; height: 100%; overflow: visible; }
+.mark.scribe svg.staff {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  /* The app caps .staff at 560px so a staff never grows past a comfortable
+     reading width. Inherited here it silently clamped every canvas bigger than
+     that — the 1024s came out at 55% scale with the letters, which are placed as
+     a percentage of the mark rather than of the svg, stranded beside their
+     noteheads. */
+  max-width: none;
+}
 .mark.scribe .rule { stroke: #000; }
 .mark.scribe .ink { fill: #000; }
 .mark.scribe .letter {
@@ -342,6 +353,23 @@ for (const app of APPS) {
     await tab.setViewportSize({ width: w, height: h });
     await tab.setContent(page(app, css, w, h, markFrac, nudgeX, vb), { waitUntil: 'load' });
     await tab.evaluate(() => document.fonts.ready);
+    if (!isSearch) {
+      // The mark is drawn by one element and labelled by another, positioned as
+      // a percentage of the first. If the app's stylesheet ever resizes the svg
+      // out from under that — as max-width did — the letters drift off their
+      // noteheads and the icon is quietly wrong. Fail instead.
+      const drift = await tab.evaluate(() => {
+        const mark = document.querySelector('.mark.scribe').getBoundingClientRect();
+        const svg = document.querySelector('.mark.scribe svg.staff').getBoundingClientRect();
+        return Math.max(Math.abs(mark.width - svg.width), Math.abs(mark.height - svg.height));
+      });
+      if (drift > 1) {
+        throw new Error(
+          `${file}: the staff svg is ${drift.toFixed(1)}px off the mark it is ` +
+          'labelled against — the letters would not sit on their noteheads',
+        );
+      }
+    }
     {
       // Weight too: a stack whose faces stop at 400/700 snaps 600 up to 700.
       // Both marks carry letters now, so both bake in a machine-specific font.
