@@ -86,7 +86,13 @@ export function mountShell(root: HTMLElement, bandLabel: string, bandFirst = fal
     difficultyEl.append(opt);
   }
   const counterEl = el('span', 'counter', 'Solved: 0');
-  topbar.append(difficultyEl, counterEl);
+  // The select is wrapped so the caret can be drawn on the wrapper's ::after —
+  // a select cannot carry one itself, and that pseudo-element is what lets the
+  // caret take its colour from the text instead of having one baked into an
+  // SVG data URI, which cannot see a CSS variable.
+  const difficultyWrap = el('span', 'difficulty-wrap');
+  difficultyWrap.append(difficultyEl);
+  topbar.append(difficultyWrap, counterEl);
 
   const stageEl = el('div', 'stage');
   stageEl.setAttribute('aria-label', 'Play area');

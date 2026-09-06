@@ -40,12 +40,35 @@ body {
   letter-spacing: 0.04em;
   color: var(--text-faint); /* match the install/mute chrome */
 }
-/* no pill — just the label + a caret; the caret is the dropdown affordance and
-   is the exact same color as the label text (--text-dim = #ece7f5 @ .55). */
+/* no pill — just the label + a caret. The caret is the dropdown affordance, and
+   it is drawn on the WRAPPER rather than as a background on the select: a data
+   URI cannot read a CSS variable, so a caret painted that way has one theme's
+   colour baked into it. It had ToneSearch's near-white in it, which on
+   ToneScribe's paper was all but invisible. Masking a shape and filling it with
+   currentColor makes it follow the label instead, whatever the theme. */
+.topbar .difficulty-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-faint);
+}
+.topbar .difficulty-wrap::after {
+  content: '';
+  position: absolute;
+  right: 0.4rem;
+  top: 50%;
+  width: 10px;
+  height: 6px;
+  transform: translateY(-50%);
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23000' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / 10px 6px;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23000' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / 10px 6px;
+  pointer-events: none; /* the select underneath still takes the tap */
+}
 .topbar .difficulty {
   font: inherit;
   letter-spacing: inherit;
-  color: var(--text-faint);
+  color: inherit;
   background: none;
   border: none;
   /* caret room on the RIGHT; the element is width-sized to the current word in
@@ -57,9 +80,6 @@ body {
   appearance: none;
   -webkit-tap-highlight-color: transparent;
   outline: none; /* no focus box while the dropdown is open */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23ece7f5' stroke-opacity='0.33' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.4rem center;
 }
 .topbar .difficulty option {
   background: var(--bg-2);
