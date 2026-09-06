@@ -55,31 +55,91 @@ const cssFor = async (app) =>
     )
   ).join('\n');
 
-// ToneScribe's mark is a clef, not a lettered tile. Two apps whose icons both
-// read "TS" would be indistinguishable on a home screen, and the clef says what
-// the app is at a glance.
-const { TREBLE_CLEF } = await import(`file://${join(ROOT, 'src/scribe/clef-paths.ts')}`)
-  .catch(async () => {
-    // clef-paths.ts is TypeScript; it holds only string constants, so pull the
-    // literal out rather than adding a TS loader to a build-time script.
-    const src = await readFile(join(ROOT, 'src/scribe/clef-paths.ts'), 'utf8');
-    const m = /export const TREBLE_CLEF =\s*'([^']*)'/.exec(src);
-    if (!m) throw new Error('could not read TREBLE_CLEF from src/scribe/clef-paths.ts');
-    return { TREBLE_CLEF: m[1] };
-  });
+// ToneScribe's mark: a zoom in on two noteheads on the staff, lettered T and S.
+// Two apps whose icons both read "TS" as a lettered tile would be
+// indistinguishable on a home screen; this one says "notes on a staff" at a
+// glance and still spells the initials.
+//
+// The noteheads are the game's OWN: same ellipse ratios, same tilt, same staff
+// spacing, and the lines are given the app's real `.staff .rule` class so their
+// colour and width come from theme.css rather than from a number typed here.
+// The three constants that shape a notehead are read out of glyphs.ts, so a
+// change there cannot leave the icon drawing a shape the game no longer uses.
+const glyphSrc = await readFile(join(ROOT, 'src/scribe/glyphs.ts'), 'utf8');
+const viewSrc = await readFile(join(ROOT, 'src/scribe/staffview.ts'), 'utf8');
+const readNum = (src, re, what) => {
+  const m = re.exec(src);
+  if (!m) throw new Error(`could not read ${what} from the app's source`);
+  return Number(m[1]);
+};
+const SPACE = readNum(glyphSrc, /export const GLYPH_SPACE = ([\d.]+)/, 'GLYPH_SPACE');
+const RX_FACTOR = readNum(glyphSrc, /const rx = space \* ([\d.]+)/, "the notehead's rx");
+const RY_FACTOR = readNum(glyphSrc, /const ry = space \* ([\d.]+)/, "the notehead's ry");
+const TILT = readNum(viewSrc, /transform: `rotate\((-?[\d.]+) /, "the notehead's tilt");
+
+/** glyphs.ts noteheadPath, in the same units the staff is drawn in. */
+const noteheadPath = (cx, cy) => {
+  const rx = SPACE * RX_FACTOR;
+  const ry = SPACE * RY_FACTOR;
+  return `M ${cx - rx} ${cy} a ${rx} ${ry} 0 1 0 ${rx * 2} 0 a ${rx} ${ry} 0 1 0 ${-rx * 2} 0`;
+};
+
+// The crop. Staff lines sit every SPACE units, as in the game; the two notes go
+// in neighbouring spaces (a third apart) with the second stepped to the right,
+// which is what makes the pair read as a diagonal rather than a stack.
+const LINES = [20, 30, 40];
+const NOTES = [
+  { cx: 0, cy: 25, text: 'T' },
+  { cx: 12, cy: 35, text: 'S' },
+];
+// Square, centred on the pair's ink, cropped close enough that the noteheads
+// dominate and the lines run out of frame — a zoom, not a whole staff.
+const VB_ICON = { x: -11, y: 13, size: 34 };
+// The favicon crops harder still. At 32px the icon's framing leaves each letter
+// about five pixels tall and unreadable; this one hugs the two noteheads, which
+// keeps the T and the S the biggest things in the square. Zooming the icon's own
+// framing instead would have cut the S off, since the crop is centred.
+const VB_FAVICON = { x: -7.5, y: 16.5, size: 27 };
+// Cap height of the letters, in staff units. `text-box` below trims the box to
+// the cap, so this IS the height of the T, not a font size to be guessed from.
+const LETTER_CAP = 4.6;
 
 /**
  * The page: the app's real stylesheet, one real `.cell.selected`, on the app's
  * real body background. `markFrac` is the diamond's point-to-point width as a
  * fraction of the canvas's shorter side.
  */
-const page = (app, css, w, h, markFrac, nudgeX = 0) => {
+const page = (app, css, w, h, markFrac, nudgeX = 0, VB = VB_ICON) => {
+  const markPx = Math.min(w, h) * markFrac;
+  const unit = markPx / VB.size; // one staff unit, in canvas pixels
+  const scribeMark =
+    `<div class="mark scribe" style="width:${markPx}px;height:${markPx}px">` +
+    `<svg class="staff" viewBox="${VB.x} ${VB.y} ${VB.size} ${VB.size}">` +
+    LINES.map(
+      // Drawn past the viewBox and allowed to overflow, so the lines run off
+      // every edge of the icon. A staff that stopped inside the frame would read
+      // as a picture OF a staff; running out of frame is what makes it a zoom.
+      (ly) =>
+        `<line class="rule" x1="${VB.x - VB.size}" y1="${ly}" x2="${VB.x + VB.size * 2}" y2="${ly}"/>`,
+    ).join('') +
+    NOTES.map(
+      (n) =>
+        `<path class="ink" d="${noteheadPath(n.cx, n.cy)}" ` +
+        `transform="rotate(${TILT} ${n.cx} ${n.cy})"/>`,
+    ).join('') +
+    '</svg>' +
+    // The letters are HTML, not SVG text, so they can use the same cap-height
+    // trim the game's note labels use — SVG has no `text-box`, and its baseline
+    // keywords centre the wrong thing for capitals.
+    NOTES.map(
+      (n) =>
+        `<span class="letter" style="left:${((n.cx - VB.x) / VB.size) * 100}%;` +
+        `top:${((n.cy - VB.y) / VB.size) * 100}%">${n.text}</span>`,
+    ).join('') +
+    '</div>';
   const body =
     app === 'scribe'
-      ? // The clef is authored with the staff at y 20…60 and spans y 6…77; centre
-        // that span and scale it to markFrac of the canvas.
-        `<svg class="mark" viewBox="0 4 30 76" width="${Math.min(w, h) * markFrac * 0.42}">` +
-        `<path d="${TREBLE_CLEF}" transform="translate(-1 0)"/></svg>`
+      ? scribeMark
       : `<div class="mark"><div class="cell selected"><span class="glyph">${MARK_TEXT}</span></div></div>`;
   const scale = (Math.min(w, h) * markFrac) / REF_DIAG;
   const fontPx = REF_SIDE * GLYPH_RATIO;
@@ -101,6 +161,23 @@ body { display: grid; place-items: center; }
 }
 svg.mark { display: block; height: auto; overflow: visible; }
 svg.mark path { fill: var(--neon); }
+/* The staff mark. The .rule and .ink classes under .staff are the app's OWN
+   rules, so the lines and noteheads take their colour and weight from
+   theme.css rather than from numbers typed into this harness. */
+.mark.scribe { position: relative; }
+.mark.scribe svg.staff { display: block; width: 100%; height: 100%; overflow: visible; }
+.mark.scribe .letter {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  color: var(--bg-2); /* knocked out of the filled notehead */
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  /* Same trim the game puts on every note label: centres the LETTER, not the
+     line box, which reserves descender room these capitals never use. */
+  text-box: trim-both cap alphabetic;
+  font-size: ${(LETTER_CAP / 0.72) * unit}px; /* cap height ≈ 0.72em in a sans */
+}
 </style></head><body>
 ${body}
 </body></html>`;
@@ -185,12 +262,12 @@ const tab = await browser.newPage();
  * say, DejaVu Sans instead of SF Pro. CDP reports the real resolved faces, which
  * is the whole point of logging this — the PNGs bake in whatever wins here.
  */
-async function paintedFont() {
+async function paintedFont(selector = '.glyph') {
   const cdp = await tab.context().newCDPSession(tab);
   await cdp.send('DOM.enable');
   await cdp.send('CSS.enable');
   const { root } = await cdp.send('DOM.getDocument');
-  const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector: '.glyph' });
+  const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector });
   const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId });
   await cdp.detach();
   return fonts.map((f) => `${f.familyName} (${f.glyphCount} glyphs)`).join(', ') || 'unknown';
@@ -205,14 +282,16 @@ for (const app of APPS) {
   const nudgeX = isSearch ? await measureInkNudgeX(tab, css) : 0;
 
   let reportedFont = null;
-  const render = async (w, h, markFrac, file) => {
+  const render = async (w, h, markFrac, file, vb = VB_ICON) => {
     await tab.setViewportSize({ width: w, height: h });
-    await tab.setContent(page(app, css, w, h, markFrac, nudgeX), { waitUntil: 'load' });
+    await tab.setContent(page(app, css, w, h, markFrac, nudgeX, vb), { waitUntil: 'load' });
     await tab.evaluate(() => document.fonts.ready);
-    if (isSearch) {
+    {
       // Weight too: a stack whose faces stop at 400/700 snaps 600 up to 700.
-      reportedFont ??= `${await paintedFont()} @ ${await tab.evaluate(
-        () => getComputedStyle(document.querySelector('.glyph')).fontWeight,
+      // Both marks carry letters now, so both bake in a machine-specific font.
+      const sel = isSearch ? '.glyph' : '.letter';
+      reportedFont ??= `${await paintedFont(sel)} @ ${await tab.evaluate(
+        (s2) => getComputedStyle(document.querySelector(s2)).fontWeight, sel,
       )}`;
     }
     await tab.screenshot({ path: join(ROOT, file), type: 'png' });
@@ -222,8 +301,10 @@ for (const app of APPS) {
 
   // Full-bleed "any" icons: home screen where not masked, app switcher, install
   // dialog. ToneSearch's glow needs room to fall off, so its diamond sits at
-  // ~64%; the clef is a quieter shape and can sit a touch larger.
-  const any = isSearch ? 0.64 : 0.7;
+  // ~64%. ToneScribe's staff runs off every edge by design, so its number is
+  // really "how big is a staff space" — large enough that the two noteheads
+  // carry the icon.
+  const any = isSearch ? 0.64 : 0.92;
   await render(192, 192, any, `${dir}/icon-192.png`);
   await render(512, 512, any, `${dir}/icon-512.png`);
   await render(1024, 1024, any, `${dir}/icon-1024.png`);
@@ -238,8 +319,9 @@ for (const app of APPS) {
 
   // Favicon: a PNG beats a hand-drawn inline SVG, which was a second drawing of
   // the mark and did not track the app's styling.
-  await render(64, 64, any + 0.08, `${dir}/favicon-64.png`);
-  await render(32, 32, any + 0.08, `${dir}/favicon-32.png`);
+  const favFrac = isSearch ? any + 0.08 : 1;
+  await render(64, 64, favFrac, `${dir}/favicon-64.png`, VB_FAVICON);
+  await render(32, 32, favFrac, `${dir}/favicon-32.png`, VB_FAVICON);
 
   if (isSearch) {
     // iOS launch images — common modern iPhone buckets [physicalW, physicalH, dpr].
@@ -263,7 +345,8 @@ for (const app of APPS) {
     console.log(`  ink centred by ${(nudgeX * 100).toFixed(2)}% of font size (side-bearing correction)`);
     console.log(`search: 4 icons + 2 maskable + 2 favicons + ${iphones.length} iOS splashes`);
   } else {
-    console.log('scribe: 4 icons + 2 maskable + 2 favicons (clef mark)');
+    console.log(`letter font resolved to: ${reportedFont}`);
+    console.log('scribe: 4 icons + 2 maskable + 2 favicons (two lettered noteheads on the staff)');
   }
 }
 
