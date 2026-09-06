@@ -138,18 +138,25 @@ export function renderStaff(
 
   // The band you must write inside — drawn first, under everything. It covers
   // exactly the writing area, so it never runs under the key signature.
-  // Half a step past the outermost step's centre — exactly where stepAtY stops
-  // rounding to that step. A FULL step (what this used to be) made the band
-  // overhang the next line or space by half of it: a tap there was inside the
-  // band, so the board counted it as an attempt, but it rounded to a step
-  // outside the range. Aiming at a line the band did not offer answered with a
-  // wrong note instead of nothing.
+  // What the band is DRAWN as, and what it ACCEPTS, are deliberately different
+  // rectangles.
   //
-  // It also gives the edge the meaning it looks like it has: the band reaches
-  // past the outermost line or space it includes, and stops flush against one
-  // it does not.
-  const bandTop = y(range.hi) - STEP_Y / 2;
-  const bandBottom = y(range.lo) + STEP_Y / 2;
+  // The paint runs half a space past the outermost step it includes. That one
+  // offset says the right thing at either kind of edge: on a space it lands
+  // exactly on the neighbouring line, so the gap is filled and the line is
+  // plainly outside; on a line it runs half a gap beyond, so the line is plainly
+  // inside. Stopping half a STEP out instead — flush with where the rounding
+  // stops — left a space looking half covered.
+  //
+  // The tap target stops at that half-step, since past it stepAtY rounds to a
+  // step the round does not include. The band may therefore be painted over
+  // ground it will not take a note on; the board's own range check (see
+  // board.ts) is what makes that harmless, and it is why the paint is free to
+  // describe the range rather than trace the hit test.
+  const bandTop = y(range.hi) - STEP_Y;
+  const bandBottom = y(range.lo) + STEP_Y;
+  const hitTop = y(range.hi) - STEP_Y / 2;
+  const hitBottom = y(range.lo) + STEP_Y / 2;
   svg.append(el('rect', {
     class: 'band', x: writeX0, y: bandTop, width: writeX1 - writeX0,
     height: bandBottom - bandTop, rx: 3,
@@ -205,8 +212,8 @@ export function renderStaff(
   // rather than demanding pixel accuracy; a tap outside is not a wrong note,
   // it is not a target at all (see the board's bounds check).
   svg.append(el('rect', {
-    class: 'slot-hit', x: writeX0, y: bandTop, width: writeX1 - writeX0,
-    height: bandBottom - bandTop,
+    class: 'slot-hit', x: writeX0, y: hitTop, width: writeX1 - writeX0,
+    height: hitBottom - hitTop,
   }));
 
   host.append(svg);
@@ -242,7 +249,7 @@ export function renderStaff(
     svg,
     geom: {
       clef, y, slotX, parkX, ledgerHalf, stepAtY, width: STAFF_W, height, minY,
-      writeArea: { x0: writeX0, x1: writeX1, yTop: bandTop, yBottom: bandBottom },
+      writeArea: { x0: writeX0, x1: writeX1, yTop: hitTop, yBottom: hitBottom },
     },
     slots,
     toGlyph,

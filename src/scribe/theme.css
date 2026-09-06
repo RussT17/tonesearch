@@ -15,7 +15,7 @@
   --text-faint: rgba(20, 18, 15, 0.42);
   --cell-fill: rgba(28, 26, 23, 0.04);
 
-  --rule: rgba(28, 26, 23, 0.85); /* staff lines */
+  --rule: #000; /* staff lines — printed black, not the page's softer ink */
   --band: rgba(28, 26, 23, 0.07); /* the range you must write inside */
   --band-edge: rgba(28, 26, 23, 0.28);
 }
