@@ -178,26 +178,32 @@
   to { opacity: 1; }
 }
 
-/* The question sits above the play surface (see mountShell's bandFirst), so it
-   needs air under the top bar — and what is left over has to be SHARED OUT
-   rather than all landing in one place. Top-aligning the stage put every spare
-   pixel between the accidentals and Give Up (246px there against 82px above the
-   staff), which read as the whole puzzle shoved up under the top bar.
-   These four numbers are one budget: the page's spare height, divided. Measured
-   on a phone, above the question / question to staff / accidentals to Give Up /
-   below Give Up now run 42 / 136 / 61 / 181, against 18 / 147 / 105 / 149
-   before and 0 / 82 / 246 / 96 when the stage was top-aligned.
-   The stage's padding is what buys the last of it: it pushes the staff down
-   inside a stage that centres its contents, closing the gap under the
-   accidentals without dragging the question down with it. */
+/* The question sits above the play surface (see mountShell's bandFirst), and
+   the page's spare height is divided between four places: above the question,
+   between the question and the staff, between the accidentals and Give Up, and
+   below Give Up. They are one budget — every pixel given to one is taken from
+   another — so these values were measured rather than guessed.
+
+   The staff is TOP-ALIGNED inside the stage on purpose. The clef's ink reaches
+   far past the staff lines, and how much space sits under it is fixed by the
+   SVG (41px from the treble clef's foot to the edge, plus the 14px gap to the
+   accidentals). Centring the stage added its slack above the staff as well,
+   which framed the clef lopsidedly — 124px of air above it against 54 below.
+   Top-aligning leaves only the stage's own padding up there, so the two match
+   at 55 and 54, and the slack falls below the accidentals instead.
+
+   With the staff pinned that close under the question, the only way to move the
+   whole puzzle down the page is the band's own margin — which is why it is
+   large. On a phone: 109 above the question, 55/54 around the clef, 111 from
+   the accidentals to Give Up, 169 below it. */
 .tokens-band {
-  margin-top: 2.6rem;
+  /* Scaled to the viewport: a fixed margin this big eats a short screen alive. */
+  margin-top: clamp(1.2rem, 12vh, 6.8rem);
 }
 .stage {
-  flex: 1.35;
-  /* Room above the staff — but it is the first thing to go on a short screen,
-     where there is no spare height to hand out in the first place. */
-  padding-top: clamp(0.4rem, 2.2vh, 1.6rem);
+  flex: 1.15;
+  align-items: flex-start;
+  padding-top: 0.45rem;
   /* base.css lets the stage shrink below its own contents (min-height: 0), which
      is fine when it is the thing absorbing slack. Here it is not: at 360x600 the
      staff and accidentals overflowed the box they were given and pushed straight
@@ -205,12 +211,11 @@
   min-height: min-content;
 }
 .foot-spacer {
-  flex: 0.7;
+  flex: 0.55;
 }
-/* Give Up belongs to the puzzle above it, not to the bottom of the page —
-   base.css's 2rem left it stranded between the two. */
+/* Give Up belongs to the puzzle above it, not to the bottom of the page. */
 .giveup {
-  margin-top: 1rem;
+  margin-top: 1.25rem;
 }
 
 /* --- the staff --- */
