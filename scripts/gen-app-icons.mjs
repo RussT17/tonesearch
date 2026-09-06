@@ -84,22 +84,68 @@ const noteheadPath = (cx, cy) => {
   return `M ${cx - rx} ${cy} a ${rx} ${ry} 0 1 0 ${rx * 2} 0 a ${rx} ${ry} 0 1 0 ${-rx * 2} 0`;
 };
 
-// The crop. Staff lines sit every SPACE units, as in the game; the two notes go
-// in neighbouring spaces (a third apart) with the second stepped to the right,
-// which is what makes the pair read as a diagonal rather than a stack.
-const LINES = [20, 30, 40];
+// The crop. Staff lines sit every SPACE units, as in the game.
+//
+// The two notes are a SECOND apart — one in a space, one on the line below —
+// with the lower one stepped right, which is what ToneScribe itself does with
+// seconds in a chord (see chordlayout.ts: they cannot share a side). That
+// interval is also the one that lets the pair be tangent AND diagonal: two of
+// these noteheads a second apart touch at dx 10.149, while a third apart they
+// touch at dx 1.245, which is a vertical stack with a wobble.
+const SECOND_TANGENT_DX = 10.149; // solved from the ellipse, see NOTE_TANGENCY below
+
 const NOTES = [
-  { cx: 0, cy: 25, text: 'T' },
-  { cx: 12, cy: 35, text: 'S' },
+  { cx: 0, cy: 25, text: 'T' }, // in the space
+  { cx: SECOND_TANGENT_DX, cy: 30, text: 'S' }, // on the line below, stepped right
 ];
-// Square, centred on the pair's ink, cropped close enough that the noteheads
-// dominate and the lines run out of frame — a zoom, not a whole staff.
-const VB_ICON = { x: -11, y: 13, size: 34 };
-// The favicon crops harder still. At 32px the icon's framing leaves each letter
-// about five pixels tall and unreadable; this one hugs the two noteheads, which
-// keeps the T and the S the biggest things in the square. Zooming the icon's own
-// framing instead would have cut the S off, since the crop is centred.
-const VB_FAVICON = { x: -7.5, y: 16.5, size: 27 };
+/** Ink box of the pair, which every crop is centred on. */
+const HEAD_HALF_W = Math.hypot(SPACE * RX_FACTOR * Math.cos((TILT * Math.PI) / 180),
+                               SPACE * RY_FACTOR * Math.sin((TILT * Math.PI) / 180));
+const HEAD_HALF_H = Math.hypot(SPACE * RX_FACTOR * Math.sin((TILT * Math.PI) / 180),
+                               SPACE * RY_FACTOR * Math.cos((TILT * Math.PI) / 180));
+const INK = {
+  cx: (Math.min(...NOTES.map((n) => n.cx)) + Math.max(...NOTES.map((n) => n.cx))) / 2,
+  cy: (Math.min(...NOTES.map((n) => n.cy)) + Math.max(...NOTES.map((n) => n.cy))) / 2,
+  w: Math.max(...NOTES.map((n) => n.cx)) - Math.min(...NOTES.map((n) => n.cx)) + HEAD_HALF_W * 2,
+  h: Math.max(...NOTES.map((n) => n.cy)) - Math.min(...NOTES.map((n) => n.cy)) + HEAD_HALF_H * 2,
+};
+/** A square crop of `size` centred on the pair. */
+const crop = (size) => ({ x: INK.cx - size / 2, y: INK.cy - size / 2, size });
+/** Every staff line the crop can show. Derived, so a change of crop cannot leave
+ * a line dangling outside it or a gap where one should be.
+ *
+ * Lines closer than a quarter space to an edge are dropped: at the boundary a
+ * line is half cut off and stops reading as a staff line at all — it reads as a
+ * border drawn around the icon. */
+const linesIn = (vb) => {
+  const keepOut = SPACE * 0.25;
+  const out = [];
+  for (let ly = Math.ceil(vb.y / SPACE) * SPACE; ly <= vb.y + vb.size; ly += SPACE) {
+    if (ly > vb.y + keepOut && ly < vb.y + vb.size - keepOut) out.push(ly);
+  }
+  return out;
+};
+/*
+ * NOTE_TANGENCY. Two IDENTICAL ellipses are tangent exactly when the offset
+ * between their centres lies on that same ellipse scaled by two — their
+ * Minkowski sum. Undo the notehead's tilt on the offset (dx, dy) and require
+ *
+ *     u² / (2·rx)² + v² / (2·ry)² = 1,   (u, v) = rotate(+18°) · (dx, dy)
+ *
+ * which for dy = 5 gives dx = 10.149. Not the same as the game's own
+ * displacement for a second (2 × HEAD_HALF = 12.93): that separates the
+ * BOUNDING BOXES, which is right for engraving where the heads must read as
+ * two, and too far apart for a mark where they should touch.
+ */
+// Square and tight: about half a staff space of paper past the ink, top and
+// bottom. It cannot go tighter — the icon is square, and the pair is WIDER than
+// it is tall, so the height is floored by the width. A shorter crop clipped the
+// T off the left edge rather than trimming paper.
+const VB_ICON = crop(INK.w + SPACE * 0.2);
+// Android crops a maskable icon to a circle of 80% diameter, so the noteheads
+// have to sit inside that circle: this one holds the same mark further back,
+// with more staff around it rather than more blank paper.
+const VB_MASKABLE = crop(36);
 // Cap height of the letters, in staff units. `text-box` below trims the box to
 // the cap, so this IS the height of the T, not a font size to be guessed from.
 const LETTER_CAP = 4.6;
@@ -115,7 +161,7 @@ const page = (app, css, w, h, markFrac, nudgeX = 0, VB = VB_ICON) => {
   const scribeMark =
     `<div class="mark scribe" style="width:${markPx}px;height:${markPx}px">` +
     `<svg class="staff" viewBox="${VB.x} ${VB.y} ${VB.size} ${VB.size}">` +
-    LINES.map(
+    linesIn(VB).map(
       // Drawn past the viewBox and allowed to overflow, so the lines run off
       // every edge of the icon. A staff that stopped inside the frame would read
       // as a picture OF a staff; running out of frame is what makes it a zoom.
@@ -162,10 +208,15 @@ body { display: grid; place-items: center; }
 svg.mark { display: block; height: auto; overflow: visible; }
 svg.mark path { fill: var(--neon); }
 /* The staff mark. The .rule and .ink classes under .staff are the app's OWN
-   rules, so the lines and noteheads take their colour and weight from
-   theme.css rather than from numbers typed into this harness. */
+   rules, so the noteheads' shape and the lines' weight come from the app rather
+   than from numbers typed into this harness — but the COLOURS are overridden to
+   pure black below. In the game the staff rule is 85% opaque ink, which is
+   right on a page of them and reads as a grey smudge at icon size, where the
+   mark has to hold up next to solid black app icons. */
 .mark.scribe { position: relative; }
 .mark.scribe svg.staff { display: block; width: 100%; height: 100%; overflow: visible; }
+.mark.scribe .rule { stroke: #000; }
+.mark.scribe .ink { fill: #000; }
 .mark.scribe .letter {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -304,7 +355,7 @@ for (const app of APPS) {
   // ~64%. ToneScribe's staff runs off every edge by design, so its number is
   // really "how big is a staff space" — large enough that the two noteheads
   // carry the icon.
-  const any = isSearch ? 0.64 : 0.92;
+  const any = isSearch ? 0.64 : 1;
   await render(192, 192, any, `${dir}/icon-192.png`);
   await render(512, 512, any, `${dir}/icon-512.png`);
   await render(1024, 1024, any, `${dir}/icon-1024.png`);
@@ -313,15 +364,17 @@ for (const app of APPS) {
   // Maskable icons: Android crops to a shape inscribed in a circle of 80%
   // diameter and zooms, which shrinks the mark on screen — so these are drawn
   // LARGER than the "any" icons to compensate, not smaller.
-  const mask = isSearch ? 0.75 : 0.8;
-  await render(512, 512, mask, `${dir}/icon-512-maskable.png`);
-  await render(1024, 1024, mask, `${dir}/icon-1024-maskable.png`);
+  const mask = isSearch ? 0.75 : 1;
+  await render(512, 512, mask, `${dir}/icon-512-maskable.png`, VB_MASKABLE);
+  await render(1024, 1024, mask, `${dir}/icon-1024-maskable.png`, VB_MASKABLE);
 
   // Favicon: a PNG beats a hand-drawn inline SVG, which was a second drawing of
   // the mark and did not track the app's styling.
+  // One crop now: the icon's own framing is already tight enough that a
+  // separate, harder-cropped favicon would barely differ from it.
   const favFrac = isSearch ? any + 0.08 : 1;
-  await render(64, 64, favFrac, `${dir}/favicon-64.png`, VB_FAVICON);
-  await render(32, 32, favFrac, `${dir}/favicon-32.png`, VB_FAVICON);
+  await render(64, 64, favFrac, `${dir}/favicon-64.png`);
+  await render(32, 32, favFrac, `${dir}/favicon-32.png`);
 
   if (isSearch) {
     // iOS launch images — common modern iPhone buckets [physicalW, physicalH, dpr].
