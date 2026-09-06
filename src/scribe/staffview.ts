@@ -138,8 +138,18 @@ export function renderStaff(
 
   // The band you must write inside — drawn first, under everything. It covers
   // exactly the writing area, so it never runs under the key signature.
-  const bandTop = y(range.hi) - STEP_Y;
-  const bandBottom = y(range.lo) + STEP_Y;
+  // Half a step past the outermost step's centre — exactly where stepAtY stops
+  // rounding to that step. A FULL step (what this used to be) made the band
+  // overhang the next line or space by half of it: a tap there was inside the
+  // band, so the board counted it as an attempt, but it rounded to a step
+  // outside the range. Aiming at a line the band did not offer answered with a
+  // wrong note instead of nothing.
+  //
+  // It also gives the edge the meaning it looks like it has: the band reaches
+  // past the outermost line or space it includes, and stops flush against one
+  // it does not.
+  const bandTop = y(range.hi) - STEP_Y / 2;
+  const bandBottom = y(range.lo) + STEP_Y / 2;
   svg.append(el('rect', {
     class: 'band', x: writeX0, y: bandTop, width: writeX1 - writeX0,
     height: bandBottom - bandTop, rx: 3,

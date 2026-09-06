@@ -122,6 +122,11 @@ export function createStaffBoard(shell: Shell, api: SessionApi): Board<ScribeRou
     const i = written.length;
     if (i >= round.solutionSteps.length) return;
     const step = view.geom.stepAtY(y);
+    // The band's rectangle and the rounding have to agree about which steps are
+    // on offer, and at the very edge pixel they still do not: the top boundary
+    // rounds up, to the step above the range. Say the rule outright rather than
+    // trusting the geometry to imply it.
+    if (step < round.range.lo || step > round.range.hi) return;
     const note = noteAt(step, round.sig, armed);
 
     // Sound the pitch actually written — the tapped step's octave, right or
