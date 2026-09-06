@@ -143,9 +143,14 @@ const linesIn = (vb) => {
 // T off the left edge rather than trimming paper.
 const VB_ICON = crop(INK.w + SPACE * 0.2);
 // Android crops a maskable icon to a circle of 80% diameter, so the noteheads
-// have to sit inside that circle: this one holds the same mark further back,
-// with more staff around it rather than more blank paper.
-const VB_MASKABLE = crop(36);
+// have to sit inside THAT circle rather than inside the square. This crop holds
+// the mark back just far enough to do it: measured off the rendered PNG, the
+// notes reach 95% of the circle's radius, so they very nearly touch it. Pulling
+// back further (36 units, where this started) left them at 82% and reading as a
+// small mark adrift in a lot of paper in the install prompt. Any tighter and
+// they cross it: the crop cannot go below the pair's own width, so 28 units
+// jumps straight to 127% and clips both ends.
+const VB_MASKABLE = crop(31);
 // Cap height of the letters, in staff units. `text-box` below trims the box to
 // the cap, so this IS the height of the T, not a font size to be guessed from.
 const LETTER_CAP = 4.6;
