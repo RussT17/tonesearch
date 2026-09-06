@@ -15,9 +15,17 @@
   --text-faint: rgba(20, 18, 15, 0.42);
   --cell-fill: rgba(28, 26, 23, 0.04);
 
-  --rule: #000; /* staff lines — printed black, not the page's softer ink */
+  /* Notation ink: staff lines, ledger lines, the clef, the key signature and
+     the noteheads. One token because they are one thing — printed music — and
+     the page's other ink (--neon, --text) is deliberately a shade softer for
+     the interface around it. Pure black keeps the notation crisp against the
+     paper and matches the app's own mark. */
+  --ink: #000;
+  --rule: var(--ink); /* staff lines */
   --band: rgba(28, 26, 23, 0.07); /* the range you must write inside */
-  --band-edge: rgba(28, 26, 23, 0.28);
+  /* The same black, held back: the ledger guides have to be aimed at without
+     being mistaken for lines a note already sits on. */
+  --band-edge: rgba(0, 0, 0, 0.28);
 }
 
 /* Ink does not glow. base.css leans on box-shadow for ToneSearch's neon bloom,
@@ -258,26 +266,15 @@
   stroke-linecap: round;
 }
 .staff .ink {
-  fill: var(--neon);
+  fill: var(--ink);
 }
 /* The band you must write inside. */
 .staff .band {
   fill: var(--band);
 }
-.staff .band-edge {
-  stroke: var(--band-edge);
-  stroke-width: 0.9;
-  stroke-dasharray: 3 3;
-  fill: none;
-}
 .staff .slot-hit {
   fill: transparent;
   cursor: pointer;
-}
-.staff .caret {
-  fill: none;
-  stroke: var(--band-edge);
-  stroke-width: 1;
 }
 /* A note slides to its chord position on a solve; see board.ts. */
 .staff .note {
@@ -291,20 +288,6 @@
   fill: var(--wrong);
   opacity: 0;
   pointer-events: none;
-}
-.staff .acc {
-  font-size: 13px;
-  font-weight: 600;
-  fill: var(--neon);
-  dominant-baseline: middle;
-  text-anchor: middle;
-}
-.staff .keysig {
-  font-size: 13px;
-  font-weight: 600;
-  fill: var(--neon);
-  dominant-baseline: middle;
-  text-anchor: middle;
 }
 
 /* --- accidental buttons --- */
@@ -335,7 +318,8 @@
   overflow: visible;
 }
 .acc-btn svg path {
-  fill: var(--text);
+  /* The same glyphs the staff writes, so the same ink. */
+  fill: var(--ink);
 }
 .acc-btn.armed {
   background: var(--neon);
