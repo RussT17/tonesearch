@@ -45,15 +45,17 @@ pip install matplotlib scipy
 python3 analyze_gradient.py profile.csv -o gradient.png
 ```
 
-The slope comes from a Savitzky-Golay fit (a local least-squares polynomial
-whose analytic derivative is evaluated at each sample), at two window widths so
-the smoothing is visible instead of being a hidden parameter. `--windows TIGHT
-BROAD` changes them; `--trim N` drops N samples from each end, where a
-screenshot's outermost columns are often clipped by the image border.
+The slope comes from a Savitzky-Golay fit: a local least-squares polynomial
+whose analytic derivative is evaluated at each sample. `--windows` sets the
+window width in miles (default 0.15); pass more than one to compare widths on
+the same axis. `--trim N` drops N samples from each end, where a screenshot's
+outermost columns are often clipped by the image border.
 
-The script also prints the digitization noise floor: the pixel grid alone puts
-only +-0.27% grade into the 0.05 mi window, so the wiggle in that series is
-structure in the source trace, not an artifact of reading it off the screen.
+The script also prints the digitization noise floor. The pixel grid alone puts
+only +-0.27% grade into a 0.05 mi window, so narrow windows are not measuring
+screen-reading error -- they are resolving real wiggle in the source trace,
+which is itself a smoothed rendering of GPS or DEM data. 0.15 mi averages over
+that wiggle and leaves the shape of the climb.
 
 `profile.csv` is the digitized version of `profile.png`: 956 samples over
 1.3 mi, 292.5 px ≈ 2540 ft of gain.

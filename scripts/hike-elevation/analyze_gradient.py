@@ -37,7 +37,10 @@ INK = "#0b0b0b"
 INK_2 = "#52514e"
 INK_MUTED = "#8a8985"
 GRID = "#e6e5e2"
-SERIES = ("#2a78d6", "#eb6834")
+# Color follows the quantity: elevation is always slot 1, grade always slot 2,
+# so the two panels never trade hues. Extra smoothing windows take later slots.
+ELEVATION = "#2a78d6"
+GRADE = ("#eb6834", "#2a78d6", "#1baf7a")
 
 
 def load(path: str):
@@ -62,9 +65,10 @@ def main(argv: list[str] | None = None) -> int:
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("csv", help="output of digitize_elevation.py")
     p.add_argument("-o", "--out", default="gradient.png")
-    p.add_argument("--windows", type=float, nargs=2, default=(0.05, 0.15),
-                   metavar=("TIGHT", "BROAD"),
-                   help="smoothing window widths in miles")
+    p.add_argument("--windows", type=float, nargs="+", default=(0.15,),
+                   metavar="MILES",
+                   help="smoothing window width(s) in miles; pass more than "
+                        "one to compare them on the same axis")
     p.add_argument("--trim", type=int, default=0,
                    help="drop this many samples from each end before fitting; "
                         "the outermost columns of a screenshot are often "
@@ -94,8 +98,8 @@ def main(argv: list[str] | None = None) -> int:
         ax.tick_params(colors=INK_2, labelsize=9, length=0)
 
     # Elevation: one series, so no legend -- the title names it.
-    ax_e.plot(x, y, color=SERIES[0], linewidth=2, solid_joinstyle="round")
-    ax_e.fill_between(x, y.min(), y, color=SERIES[0], alpha=0.10, linewidth=0)
+    ax_e.plot(x, y, color=ELEVATION, linewidth=2, solid_joinstyle="round")
+    ax_e.fill_between(x, y.min(), y, color=ELEVATION, alpha=0.10, linewidth=0)
     ax_e.set_ylabel(f"Elevation ({unit})", color=INK_2, fontsize=10)
     ax_e.set_title(args.title, color=INK, fontsize=14, loc="left", pad=14)
     ax_e.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:,.0f}"))
@@ -104,7 +108,7 @@ def main(argv: list[str] | None = None) -> int:
     # right and below it on the left.
     for xi, yi, dx, dy, ha in ((x[0], y[0], 10, 6, "left"),
                                (x[-1], y[-1], -10, 8, "right")):
-        ax_e.plot([xi], [yi], "o", markersize=8, color=SERIES[0],
+        ax_e.plot([xi], [yi], "o", markersize=8, color=ELEVATION,
                   markeredgecolor=SURFACE, markeredgewidth=2, zorder=3)
         ax_e.annotate(f"{yi:,.0f} {unit}", (xi, yi), textcoords="offset points",
                       xytext=(dx, dy), ha=ha, va="bottom", color=INK_2, fontsize=9)
@@ -116,20 +120,36 @@ def main(argv: list[str] | None = None) -> int:
                   (x[0], mean_grade), textcoords="offset points", xytext=(4, 5),
                   color=INK_2, fontsize=9)
 
-    for col, window, g in zip(SERIES, args.windows, grades):
+    for col, window, g in zip(GRADE, args.windows, grades):
         ax_g.plot(x, g, color=col, linewidth=2, solid_joinstyle="round",
                   label=f"{window:g} mi window")
     ax_g.set_ylabel("Grade (rise / run)", color=INK_2, fontsize=10)
     ax_g.set_xlabel("Distance (mi)", color=INK_2, fontsize=10)
     ax_g.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:.0f}%"))
-    ax_g.set_title("Slope from a local quadratic fit, at two smoothing widths",
-                   color=INK_2, fontsize=10, loc="left", pad=10)
-    # Above the panel, clear of the curves, which fill the plot area.
-    leg = ax_g.legend(loc="lower right", bbox_to_anchor=(1.0, 1.0), ncol=2,
-                      frameon=False, fontsize=9, handlelength=1.6,
-                      columnspacing=1.6, borderpad=0)
-    for text in leg.get_texts():
-        text.set_color(INK_2)
+    if len(args.windows) == 1:
+        # One series needs no legend box -- the subtitle names the window.
+        subtitle = (f"Slope from a local quadratic fit over a "
+                    f"{args.windows[0]:g} mi window")
+    else:
+        subtitle = "Slope from a local quadratic fit, at several smoothing widths"
+        # Above the panel, clear of the curves, which fill the plot area.
+        leg = ax_g.legend(loc="lower right", bbox_to_anchor=(1.0, 1.0),
+                          ncol=len(args.windows), frameon=False, fontsize=9,
+                          handlelength=1.6, columnspacing=1.6, borderpad=0)
+        for text in leg.get_texts():
+            text.set_color(INK_2)
+    ax_g.set_title(subtitle, color=INK_2, fontsize=10, loc="left", pad=10)
+
+    # Mark the steepest point of the broadest series -- the one value the
+    # "does it get steeper at the top?" question turns on.
+    broadest = grades[int(np.argmax(args.windows))]
+    peak = int(np.argmax(broadest))
+    ax_g.plot([x[peak]], [broadest[peak]], "o", markersize=8,
+              color=GRADE[int(np.argmax(args.windows))],
+              markeredgecolor=SURFACE, markeredgewidth=2, zorder=3)
+    ax_g.annotate(f"steepest  {broadest[peak]:.0f}%  at {x[peak]:.2f} mi",
+                  (x[peak], broadest[peak]), textcoords="offset points",
+                  xytext=(0, 12), ha="center", color=INK_2, fontsize=9)
 
     ax_g.set_xlim(x[0], x[-1])
     ax_g.margins(y=0.10)
