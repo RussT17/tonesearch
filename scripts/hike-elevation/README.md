@@ -52,6 +52,10 @@ on the same axis, where the broadest keeps the first color slot so adding a
 tighter window does not repaint the one already on the chart. `--trim N` drops N samples from each end, where a screenshot's outermost
 columns are often clipped by the image border.
 
+The elevation panel also marks where the climb banks each quarter of its total
+gain, so the distribution of the work along the distance is visible against the
+curve; the same figures are printed to stdout.
+
 ### Closing off the ends
 
 Within a half-window of each end there is no centred window left to fit, and

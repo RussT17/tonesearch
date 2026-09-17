@@ -154,6 +154,21 @@ def main(argv: list[str] | None = None) -> int:
                   markeredgecolor=SURFACE, markeredgewidth=2, zorder=3)
         ax_e.annotate(f"{yi:,.0f} {unit}", (xi, yi), textcoords="offset points",
                       xytext=(dx, dy), ha=ha, va="bottom", color=INK_2, fontsize=9)
+    # Quarters of the total gain, to show how the climb is distributed along
+    # the distance. Read against the running maximum so the lookup is
+    # monotonic where the trace dips.
+    climbed = np.maximum.accumulate(y)
+    quartiles = []
+    for frac, name in ((0.25, "1/4"), (0.50, "1/2"), (0.75, "3/4")):
+        target = y[0] + frac * (y[-1] - y[0])
+        xq = float(np.interp(target, climbed, x))
+        quartiles.append((name, frac, xq, target))
+        ax_e.vlines(xq, y.min(), target, color=INK_MUTED, linewidth=1)
+        ax_e.plot([xq], [target], "o", markersize=8, color=ELEVATION,
+                  markeredgecolor=SURFACE, markeredgewidth=2, zorder=3)
+        ax_e.annotate(f"{name} of gain\n{xq:.2f} mi", (xq, target),
+                      textcoords="offset points", xytext=(-9, 7), ha="right",
+                      va="bottom", color=INK_2, fontsize=9, linespacing=1.4)
     ax_e.margins(y=0.12)
 
     mean_grade = (y[-1] - y[0]) / ((x[-1] - x[0]) * FEET_PER_MILE) * 100
@@ -217,6 +232,10 @@ def main(argv: list[str] | None = None) -> int:
         noise = sigma * np.sqrt(12.0 / (n * (n * n - 1))) / step_ft * 100
         print(f"  {window:g} mi window ({n} samples): "
               f"digitization noise floor +-{noise:.2f}% grade")
+
+    for name, frac, xq, target in quartiles:
+        print(f"  {name} of the gain ({target:,.0f} {unit}) at {xq:.2f} mi"
+              f" -- {xq / x[-1] * 100:.0f}% of the distance")
 
     broad = grades[0]  # section means read off the broadest window
     edges = np.linspace(x[0], x[-1], 5)
