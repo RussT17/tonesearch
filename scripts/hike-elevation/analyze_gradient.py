@@ -101,7 +101,7 @@ def main(argv: list[str] | None = None) -> int:
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("csv", help="output of digitize_elevation.py")
     p.add_argument("-o", "--out", default="gradient.png")
-    p.add_argument("--windows", type=float, nargs="+", default=(0.10, 0.15),
+    p.add_argument("--windows", type=float, nargs="+", default=(0.15,),
                    metavar="MILES",
                    help="smoothing window width(s) in miles; pass more than "
                         "one to compare them on the same axis")

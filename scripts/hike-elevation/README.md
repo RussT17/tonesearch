@@ -47,9 +47,9 @@ python3 analyze_gradient.py profile.csv -o gradient.png
 
 The slope comes from a Savitzky-Golay fit: a local least-squares polynomial
 whose analytic derivative is evaluated at each sample. `--windows` sets the
-window width(s) in miles (default `0.1 0.15`); the broadest one keeps the first
-color slot, so adding a tighter window does not repaint the one already on the
-chart. `--trim N` drops N samples from each end, where a screenshot's outermost
+window width(s) in miles (default `0.15`); pass more than one to compare them
+on the same axis, where the broadest keeps the first color slot so adding a
+tighter window does not repaint the one already on the chart. `--trim N` drops N samples from each end, where a screenshot's outermost
 columns are often clipped by the image border.
 
 ### Closing off the ends
