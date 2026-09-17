@@ -47,9 +47,27 @@ python3 analyze_gradient.py profile.csv -o gradient.png
 
 The slope comes from a Savitzky-Golay fit: a local least-squares polynomial
 whose analytic derivative is evaluated at each sample. `--windows` sets the
-window width in miles (default 0.15); pass more than one to compare widths on
-the same axis. `--trim N` drops N samples from each end, where a screenshot's
-outermost columns are often clipped by the image border.
+window width(s) in miles (default `0.1 0.15`); the broadest one keeps the first
+color slot, so adding a tighter window does not repaint the one already on the
+chart. `--trim N` drops N samples from each end, where a screenshot's outermost
+columns are often clipped by the image border.
+
+### Closing off the ends
+
+Within a half-window of each end there is no centred window left to fit, and
+the choice made there visibly changes the answer. `--edge` picks it:
+
+| mode | what it does | grade at 0 / 1.3 mi (0.15 mi window) |
+| --- | --- | --- |
+| `reflect` (default) | pads by point reflection through the endpoint, `y[-k] = 2*y[0] - y[k]`: slope carries across the boundary, curvature flips | 11% / 27% |
+| `poly` | pads with a quadratic fitted to the outermost half-window and extrapolated | -11% / 22% |
+| `interp` | scipy's own: fits the end window once, evaluates its derivative off-centre | 24% / 36% |
+
+For this profile `reflect` is the one to use. `poly` reads the curvature of the
+end segment as a trend to continue, so the flat bench at the start -- which
+steepens as it goes -- extrapolates to a *negative* grade before the first
+sample, and `interp` reports 36% at a summit whose last tenth of a mile
+averages 28%.
 
 The script also prints the digitization noise floor. The pixel grid alone puts
 only +-0.27% grade into a 0.05 mi window, so narrow windows are not measuring
