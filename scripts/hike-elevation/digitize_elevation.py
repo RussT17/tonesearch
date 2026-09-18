@@ -54,43 +54,69 @@ def runs(col: np.ndarray):
     return list(zip(starts.tolist(), ends.tolist()))
 
 
-def trace(bright: np.ndarray, fill: np.ndarray, gap: int, thick_factor: float):
+def trace(bright: np.ndarray, fill: np.ndarray, gap: int, thick_factor: float,
+          max_jump: float):
     """Row of the trace centre for each column, or NaN where there is none.
 
-    Columns where a label glyph has merged into the line are left as NaN --
-    the run is far thicker than the line there and its centre would be wrong.
+    Where the plot is filled, the trace is the bright run resting on top of the
+    fill. Beyond the filled span -- a flat start at the axis, or the descent of
+    an out-and-back profile, which these screenshots leave unfilled -- the run
+    is picked by continuity with the column before it, so labels printed over
+    the background are not mistaken for data.
+
+    Columns where a label glyph has merged into the line are left as NaN: the
+    run is far thicker than the line there and its centre would be wrong.
     """
     height, width = bright.shape
-    # The baseline is the lowest row that any fill reaches: the plot's x-axis.
-    fill_rows = np.nonzero(fill.any(axis=1))[0]
-    baseline = int(fill_rows.max()) if fill_rows.size else height - 1
+    col_runs = [runs(bright[:, x]) for x in range(width)]
 
     ys = np.full(width, np.nan)
     thickness = np.full(width, np.nan)
-    for x in range(width):
-        candidates = runs(bright[:, x])
-        if not candidates:
-            continue
-        col_fill = np.nonzero(fill[:, x])[0]
-        if col_fill.size:
-            # The real trace is the run resting on top of the fill. Labels
-            # printed over the fill sit well below it; labels over the
-            # background have nothing beneath them at all.
-            top = int(col_fill.min())
-            picked = [c for c in candidates if 0 <= top - c[1] <= gap]
-        else:
-            # No fill in this column means the trace is flat on the axis.
-            picked = [c for c in candidates if abs(c[1] - baseline) <= gap]
-        if not picked:
-            continue
-        start, end = min(picked, key=lambda c: c[0])
+
+    def take(x: int, run: tuple[int, int]) -> float:
+        start, end = run
         ys[x] = (start + end) / 2.0
         thickness[x] = end - start + 1
+        return ys[x]
+
+    # Anchor on the fill: labels printed over it sit well below its top edge,
+    # and labels over the background have no fill beneath them at all.
+    anchored = []
+    for x in range(width):
+        col_fill = np.nonzero(fill[:, x])[0]
+        if not col_fill.size or not col_runs[x]:
+            continue
+        top = int(col_fill.min())
+        picked = [c for c in col_runs[x] if 0 <= top - c[1] <= gap]
+        if picked:
+            take(x, min(picked, key=lambda c: c[0]))
+            anchored.append(x)
+    if not anchored:
+        return ys, height - 1
+
+    # Extend past the filled span by following the line: at each column take
+    # the run closest to where the trace was last seen, allowing it to move by
+    # max_jump rows per column crossed.
+    for step in (-1, 1):
+        edge = min(anchored) if step < 0 else max(anchored)
+        last_x, last_y = edge, ys[edge]
+        for x in range(edge + step, -1 if step < 0 else width, step):
+            if not col_runs[x]:
+                continue
+            reach = max_jump * abs(x - last_x)
+            near = [c for c in col_runs[x]
+                    if abs((c[0] + c[1]) / 2.0 - last_y) <= reach]
+            if not near:
+                continue
+            best = min(near, key=lambda c: abs((c[0] + c[1]) / 2.0 - last_y))
+            last_x, last_y = x, take(x, best)
 
     seen = thickness[~np.isnan(thickness)]
-    if seen.size:
-        limit = max(thick_factor * float(np.median(seen)), np.median(seen) + 2)
-        ys[thickness > limit] = np.nan
+    limit = max(thick_factor * float(np.median(seen)), np.median(seen) + 2)
+    ys[thickness > limit] = np.nan
+
+    fill_rows = np.nonzero(fill.any(axis=1))[0]
+    baseline = int(fill_rows.max()) if fill_rows.size else height - 1
     return ys, baseline
 
 
@@ -113,6 +139,12 @@ def main(argv: list[str] | None = None) -> int:
                    help="minimum channel spread for a fill pixel")
     p.add_argument("--gap", type=int, default=3,
                    help="pixels of slack allowed between trace and fill")
+    p.add_argument("--segment", choices=("all", "ascent"), default="all",
+                   help="'ascent' keeps only the climb to the high point, for "
+                        "an out-and-back profile")
+    p.add_argument("--max-jump", type=float, default=15.0,
+                   help="rows the trace may move per column, when following it "
+                        "beyond the filled span")
     p.add_argument("--overlay",
                    help="write a copy of the image with the samples drawn on "
                         "top, to eyeball the trace")
@@ -123,7 +155,8 @@ def main(argv: list[str] | None = None) -> int:
 
     rgb = np.asarray(Image.open(args.image).convert("RGB")).astype(int)
     bright, fill = masks(rgb, args.bright_min, args.fill_sat)
-    ys, baseline = trace(bright, fill, args.gap, args.thick_factor)
+    ys, baseline = trace(bright, fill, args.gap, args.thick_factor,
+                         args.max_jump)
 
     cols = np.nonzero(~np.isnan(ys))[0]
     if cols.size < 2:
@@ -136,6 +169,12 @@ def main(argv: list[str] | None = None) -> int:
     # them rather than leaving holes in the series.
     span = np.arange(x0, x1 + 1)
     y = np.interp(span, cols, ys[cols])
+
+    if args.segment == "ascent":
+        # Cut at the high point. The x scale is already fixed by the full
+        # traced width, so the descent's own columns are not needed past here.
+        summit = int(np.argmin(y))
+        span, y = span[:summit + 1], y[:summit + 1]
 
     # Pixel rows grow downwards, so height above the start is start - y.
     y_px = y[0] - y
@@ -172,9 +211,9 @@ def main(argv: list[str] | None = None) -> int:
         if out is not sys.stdout:
             out.close()
 
-    print(f"traced columns {x0}-{x1} ({len(span)} samples, "
-          f"{len(span) - len(cols)} interpolated), baseline row {baseline}",
-          file=sys.stderr)
+    bridged = int(np.isnan(ys[span]).sum())
+    print(f"traced columns {span[0]}-{span[-1]} ({len(span)} samples, "
+          f"{bridged} interpolated), baseline row {baseline}", file=sys.stderr)
     return 0
 
 

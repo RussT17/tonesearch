@@ -20,13 +20,25 @@ Columns in the CSV:
 ## How it finds the line
 
 The trace is white, but so are the axis labels and the elevation callouts, so
-brightness alone is not enough. For each column the script takes the bright run
-that sits directly on top of the filled area — labels drawn over the fill sit
+brightness alone is not enough. Where the plot is filled, the script takes the
+bright run sitting directly on top of the fill — labels drawn over the fill sit
 well below it, and labels over the background have no fill beneath them at all.
+
+Past the filled span the line is followed by continuity: each column takes the
+bright run nearest to where the trace was last seen, within `--max-jump` rows
+per column crossed. That covers a flat start lying on the axis, and the descent
+of an out-and-back profile, which these screenshots leave unfilled — on
+`chief.png` it tracks the descent cleanly past the `220 ft` callout to the
+image edge.
+
 Where a glyph actually touches the line (the `3,500 ft` callout crosses it near
-the summit) the merged run is much thicker than the line, so those 19 columns
-are dropped and interpolated across instead. `--overlay` writes the samples
-back onto the image in green to check the fit.
+the summit of `profile.png`) the merged run is much thicker than the line, so
+those columns are dropped and interpolated across instead. `--overlay` writes
+the samples back onto the image in green to check the fit.
+
+`--segment ascent` keeps only the climb to the high point. The x scale is fixed
+from the full traced width first, so cutting the descent does not disturb the
+distance calibration.
 
 ## Calibration assumptions
 
@@ -79,5 +91,24 @@ screen-reading error -- they are resolving real wiggle in the source trace,
 which is itself a smoothed rendering of GPS or DEM data. 0.15 mi averages over
 that wiggle and leaves the shape of the climb.
 
-`profile.csv` is the digitized version of `profile.png`: 956 samples over
-1.3 mi, 292.5 px ≈ 2540 ft of gain.
+## Comparing hikes
+
+`compare_hikes.py` overlays two or more digitized profiles on one pair of axes:
+
+```
+python3 compare_hikes.py "Grouse Grind=profile.csv" \
+    "Stawamus Chief=chief.csv" -o compare.png \
+    --title "Grouse Grind vs Stawamus Chief, ascent only"
+```
+
+Elevation is plotted as gain above each trailhead rather than absolute
+elevation, so climbs starting at different heights land on a common base. Each
+hike keeps one hue across both panels, and its whole-climb average grade is
+drawn as a thin line in that hue.
+
+## The digitized files
+
+| file | source | samples |
+| --- | --- | --- |
+| `profile.csv` | `profile.png`, the Grouse Grind | 958 over 1.30 mi, +2,540 ft |
+| `chief.csv` | `chief.png`, Stawamus Chief First Peak, ascent only | 479 over 1.20 mi, +1,800 ft |
